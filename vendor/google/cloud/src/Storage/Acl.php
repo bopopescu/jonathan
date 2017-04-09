@@ -29,9 +29,10 @@ use InvalidArgumentException;
  *
  * Example:
  * ```
- * use Google\Cloud\Storage\StorageClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $storage = new StorageClient();
+ * $cloud = new ServiceBuilder();
+ * $storage = $cloud->storage();
  *
  * $bucket = $storage->bucket('my-bucket');
  * $acl = $bucket->acl();

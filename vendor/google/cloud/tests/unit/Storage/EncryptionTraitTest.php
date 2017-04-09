@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Tests\Unit\Storage;
+namespace Google\Cloud\Tests\Storage;
 
 use Google\Cloud\Storage\EncryptionTrait;
 
@@ -52,7 +52,7 @@ class EncryptionTraitTest extends \PHPUnit_Framework_TestCase
         return [
             [
                 [
-                    'restOptions' => [
+                    'httpOptions' => [
                         'headers' => $this->getEncryptionHeaders($key, $hash)
                     ]
                 ],
@@ -63,7 +63,7 @@ class EncryptionTraitTest extends \PHPUnit_Framework_TestCase
             ],
             [
                 [
-                    'restOptions' => [
+                    'httpOptions' => [
                         'headers' => $this->getEncryptionHeaders($key, $hash)
                     ]
                 ],
@@ -73,7 +73,7 @@ class EncryptionTraitTest extends \PHPUnit_Framework_TestCase
             ],
             [
                 [
-                    'restOptions' => [
+                    'httpOptions' => [
                         'headers' => array_merge(
                             $this->getEncryptionHeaders($destinationKey, $destinationHash),
                             $this->getCopySourceEncryptionHeaders($key, $hash)
@@ -90,14 +90,14 @@ class EncryptionTraitTest extends \PHPUnit_Framework_TestCase
             ],
             [
                 [
-                    'restOptions' => [
+                    'httpOptions' => [
                         'headers' => $this->getEncryptionHeaders($key, $hash) + ['hey' => 'dont clobber me']
                     ]
                 ],
                 [
                     'encryptionKey' => $key,
                     'encryptionKeySHA256' => $hash,
-                    'restOptions' => [
+                    'httpOptions' => [
                         'headers' => [
                             'hey' => 'dont clobber me'
                         ]

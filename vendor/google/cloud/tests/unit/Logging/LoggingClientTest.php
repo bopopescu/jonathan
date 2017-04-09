@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Tests\Unit\Logging;
+namespace Google\Cloud\Tests\Logging;
 
 use Google\Cloud\Logging\Logger;
 use Google\Cloud\Logging\LoggingClient;
@@ -208,6 +208,7 @@ class LoggingClientTest extends \PHPUnit_Framework_TestCase
     {
         $secondProjectId = 'secondProjectId';
         $this->connection->listEntries([
+            'pageToken' => null,
             'resourceNames' => [
                 'projects/' . $this->projectId,
                 'projects/' . $secondProjectId

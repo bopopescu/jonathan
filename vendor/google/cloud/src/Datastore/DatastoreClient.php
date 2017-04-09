@@ -18,34 +18,42 @@
 namespace Google\Cloud\Datastore;
 
 use DomainException;
-use Google\Cloud\Core\ClientTrait;
+use Google\Cloud\ClientTrait;
 use Google\Cloud\Datastore\Connection\Rest;
 use Google\Cloud\Datastore\Query\GqlQuery;
 use Google\Cloud\Datastore\Query\Query;
 use Google\Cloud\Datastore\Query\QueryBuilder;
 use Google\Cloud\Datastore\Query\QueryInterface;
-use Google\Cloud\Core\Int64;
+use Google\Cloud\Int64;
 use InvalidArgumentException;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Http\Message\StreamInterface;
 
 /**
- * Google Cloud Datastore is a highly-scalable NoSQL database for your
- * applications. Find more information at the
+ * Google Cloud Datastore client. Cloud Datastore is a highly-scalable NoSQL
+ * database for your applications.  Find more information at
  * [Google Cloud Datastore docs](https://cloud.google.com/datastore/docs/).
  *
- * Cloud Datastore supports
- * [multi-tenant](https://cloud.google.com/datastore/docs/concepts/multitenancy)
- * applications through use of data partitions. A partition ID can be supplied
- * when creating an instance of Cloud Datastore, and will be used in all
- * operations executed in that instance.
+ * Cloud Datastore supports [multi-tenant](https://cloud.google.com/datastore/docs/concepts/multitenancy) applications
+ * through use of data partitions. A partition ID can be supplied when creating an instance of Cloud Datastore, and will
+ * be used in all operations executed in that instance.
  *
  * To enable the
  * [Google Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator),
- * set the [`DATASTORE_EMULATOR_HOST`](https://goo.gl/vCVZrY) environment variable.
+ * set the
+ * [`PUBSUB_EMULATOR_HOST`](https://cloud.google.com/datastore/docs/tools/datastore-emulator#setting_environment_variables)
+ * environment variable.
  *
  * Example:
  * ```
+ * use Google\Cloud\ServiceBuilder;
+ *
+ * $cloud = new ServiceBuilder();
+ *
+ * $datastore = $cloud->datastore();
+ * ```
+ *
+ * ```
+ * // DatastoreClient can be instantiated directly.
  * use Google\Cloud\Datastore\DatastoreClient;
  *
  * $datastore = new DatastoreClient();
@@ -53,30 +61,31 @@ use Psr\Http\Message\StreamInterface;
  *
  * ```
  * // Multi-tenant applications can supply a namespace ID.
- * use Google\Cloud\Datastore\DatastoreClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $datastore = new DatastoreClient([
+ * $cloud = new ServiceBuilder();
+ *
+ * $datastore = $cloud->datastore([
  *     'namespaceId' => 'my-application-namespace'
  * ]);
  * ```
  *
  * ```
  * // Using the Datastore Emulator
- * use Google\Cloud\Datastore\DatastoreClient;
+ * use Google\Cloud\ServiceBuilder;
  *
  * // Be sure to use the port specified when starting the emulator.
  * // `8900` is used as an example only.
  * putenv('DATASTORE_EMULATOR_HOST=http://localhost:8900');
  *
- * $datastore = new DatastoreClient();
+ * $cloud = new ServiceBuilder();
+ * $datastore = $cloud->datastore();
  * ```
  */
 class DatastoreClient
 {
     use ClientTrait;
     use DatastoreTrait;
-
-    const VERSION = '1.0.0';
 
     const FULL_CONTROL_SCOPE = 'https://www.googleapis.com/auth/datastore';
 
@@ -122,7 +131,7 @@ class DatastoreClient
      *     @type string $namespaceId Partitions data under a namespace. Useful for
      *           [Multitenant Projects](https://cloud.google.com/datastore/docs/concepts/multitenancy).
      *     @type bool $returnInt64AsObject If true, 64 bit integers will be
-     *           returned as a {@see Google\Cloud\Core\Int64} object for 32 bit
+     *           returned as a {@see Google\Cloud\Int64} object for 32 bit
      *           platform compatibility. **Defaults to** false.
      * }
      * @throws \InvalidArgumentException
@@ -363,7 +372,7 @@ class DatastoreClient
      * $blob = $datastore->blob(file_get_contents(__DIR__ .'/family-photo.jpg'));
      * ```
      *
-     * @param string|resource|StreamInterface $value The value to store in a blob.
+     * @param string|resource|StreamInterface $value
      * @return Blob
      */
     public function blob($value)
@@ -485,8 +494,6 @@ class DatastoreClient
      * $datastore->insert($entity);
      * ```
      *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
-     *
      * @param Entity $entity The entity to be inserted.
      * @param array $options [optional] Configuration options.
      * @return string The entity version.
@@ -516,8 +523,6 @@ class DatastoreClient
      *
      * $datastore->insertBatch($entities);
      * ```
-     *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
      *
      * @param Entity[] $entities The entities to be inserted.
      * @param array $options [optional] Configuration options.
@@ -550,8 +555,6 @@ class DatastoreClient
      *
      * $datastore->update($entity);
      * ```
-     *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
      *
      * @param Entity $entity The entity to be updated.
      * @param array $options [optional] {
@@ -592,8 +595,6 @@ class DatastoreClient
      *
      * $datastore->updateBatch($entities);
      * ```
-     *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
      *
      * @param Entity[] $entities The entities to be updated.
      * @param array $options [optional] {
@@ -647,8 +648,6 @@ class DatastoreClient
      * $datastore->upsert($entity);
      * ```
      *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
-     *
      * @param Entity $entity The entity to be upserted.
      * @param array $options [optional] Configuration Options.
      * @return string The entity version.
@@ -689,8 +688,6 @@ class DatastoreClient
      * $datastore->upsertBatch($entities);
      * ```
      *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
-     *
      * @param Entity[] $entities The entities to be upserted.
      * @param array $options [optional] Configuration Options.
      * @return array [Response Body](https://cloud.google.com/datastore/reference/rest/v1/projects/commit#response-body)
@@ -717,8 +714,6 @@ class DatastoreClient
      *
      * $datastore->delete($key);
      * ```
-     *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
      *
      * @param Key $key The identifier to delete.
      * @param array $options [optional] {
@@ -753,8 +748,6 @@ class DatastoreClient
      *
      * $datastore->deleteBatch($keys);
      * ```
-     *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/commit Commit API documentation
      *
      * @param Key[] $keys The identifiers to delete.
      * @param array $options [optional] {
@@ -797,8 +790,6 @@ class DatastoreClient
      * }
      * ```
      *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/lookup Lookup API documentation
-     *
      * @param Key $key The identifier to use to locate a desired entity.
      * @param array $options [optional] {
      *     Configuration Options
@@ -839,8 +830,6 @@ class DatastoreClient
      *     echo $entity['firstName'] . PHP_EOL;
      * }
      * ```
-     *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/lookup Lookup API documentation
      *
      * @param Key[] $key The identifiers to look up.
      * @param array $options [optional] {
@@ -960,8 +949,6 @@ class DatastoreClient
      * }
      * ```
      *
-     * @see https://cloud.google.com/datastore/docs/reference/rest/v1/projects/runQuery RunQuery API documentation
-     *
      * @param QueryInterface $query A query object.
      * @param array $options [optional] {
      *     Configuration Options
@@ -972,7 +959,7 @@ class DatastoreClient
      *     @type string $readConsistency See
      *           [ReadConsistency](https://cloud.google.com/datastore/reference/rest/v1/ReadOptions#ReadConsistency).
      * }
-     * @return EntityIterator<Google\Cloud\Datastore\Entity>
+     * @return \Generator<Google\Cloud\Datastore\Entity>
      */
     public function runQuery(QueryInterface $query, array $options = [])
     {

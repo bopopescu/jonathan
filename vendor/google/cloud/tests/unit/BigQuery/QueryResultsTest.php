@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Tests\Unit\BigQuery;
+namespace Google\Cloud\Tests\BigQuery;
 
 use Google\Cloud\BigQuery\Connection\ConnectionInterface;
 use Google\Cloud\BigQuery\QueryResults;
@@ -63,7 +63,7 @@ class QueryResultsTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Google\Cloud\Core\Exception\GoogleException
+     * @expectedException \Google\Cloud\Exception\GoogleException
      */
     public function testGetsRowsThrowsExceptionWhenQueryNotComplete()
     {

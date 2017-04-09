@@ -17,23 +17,30 @@
 
 namespace Google\Cloud\BigQuery;
 
+use Google\Cloud\ArrayTrait;
 use Google\Cloud\BigQuery\Connection\ConnectionInterface;
 use Google\Cloud\BigQuery\Connection\Rest;
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
-use Google\Cloud\Core\ClientTrait;
-use Google\Cloud\Core\Int64;
+use Google\Cloud\ClientTrait;
+use Google\Cloud\Int64;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * Google Cloud BigQuery allows you to create, manage, share and query data.
- * Find more information at the
- * [Google Cloud BigQuery Docs](https://cloud.google.com/bigquery/docs).
+ * Google Cloud BigQuery client. Allows you to create, manage, share and query
+ * data. Find more information at
+ * [Google Cloud BigQuery Docs](https://cloud.google.com/bigquery/what-is-bigquery).
  *
  * Example:
  * ```
+ * use Google\Cloud\ServiceBuilder;
+ *
+ * $cloud = new ServiceBuilder();
+ *
+ * $bigQuery = $cloud->bigQuery();
+ * ```
+ *
+ * ```
+ * // BigQueryClient can be instantiated directly.
  * use Google\Cloud\BigQuery\BigQueryClient;
  *
  * $bigQuery = new BigQueryClient();
@@ -45,13 +52,11 @@ class BigQueryClient
     use ClientTrait;
     use JobConfigurationTrait;
 
-    const VERSION = '0.2.0';
-
     const SCOPE = 'https://www.googleapis.com/auth/bigquery';
     const INSERT_SCOPE = 'https://www.googleapis.com/auth/bigquery.insertdata';
 
     /**
-     * @var ConnectionInterface Represents a connection to BigQuery.
+     * @var ConnectionInterface $connection Represents a connection to BigQuery.
      */
     protected $connection;
 
@@ -85,7 +90,7 @@ class BigQueryClient
      *           to** `3`.
      *     @type array $scopes Scopes to be used for the request.
      *     @type bool $returnInt64AsObject If true, 64 bit integers will be
-     *           returned as a {@see Google\Cloud\Core\Int64} object for 32 bit
+     *           returned as a {@see Google\Cloud\Int64} object for 32 bit
      *           platform compatibility. **Defaults to** false.
      * }
      */
@@ -118,7 +123,7 @@ class BigQueryClient
      * | `\DateTimeInterface`                       | `DATETIME`                           |
      * | {@see Google\Cloud\BigQuery\Bytes}         | `BYTES`                              |
      * | {@see Google\Cloud\BigQuery\Date}          | `DATE`                               |
-     * | {@see Google\Cloud\Core\Int64}             | `INT64`                              |
+     * | {@see Google\Cloud\Int64}                  | `INT64`                              |
      * | {@see Google\Cloud\BigQuery\Time}          | `TIME`                               |
      * | {@see Google\Cloud\BigQuery\Timestamp}     | `TIMESTAMP`                          |
      * | Associative Array                          | `STRUCT`                             |
@@ -210,9 +215,7 @@ class BigQueryClient
      *     @type bool $useQueryCache Whether to look for the result in the query
      *           cache.
      *     @type bool $useLegacySql Specifies whether to use BigQuery's legacy
-     *           SQL dialect for this query. **Defaults to** `true`. If set to
-     *           false, the query will use
-     *           [BigQuery's standard SQL](https://cloud.google.com/bigquery/sql-reference).
+     *           SQL dialect for this query.
      *     @type array $parameters Only available for standard SQL queries.
      *           When providing a non-associative array positional parameters
      *           (`?`) will be used. When providing an associative array
@@ -310,8 +313,8 @@ class BigQueryClient
             $this->connection,
             $response['jobReference']['jobId'],
             $this->projectId,
-            $this->mapper,
-            $response
+            $response,
+            $this->mapper
         );
     }
 
@@ -330,7 +333,7 @@ class BigQueryClient
      */
     public function job($id)
     {
-        return new Job($this->connection, $id, $this->projectId, $this->mapper);
+        return new Job($this->connection, $id, $this->projectId, [], $this->mapper);
     }
 
     /**
@@ -355,39 +358,35 @@ class BigQueryClient
      *
      *     @type bool $allUsers Whether to display jobs owned by all users in
      *           the project. **Defaults to** `false`.
-     *     @type int $maxResults Maximum number of results to return per page.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
+     *     @type int $maxResults Maximum number of results to return.
      *     @type string $stateFilter Filter for job state. Maybe be either
      *           `done`, `pending`, or `running`.
      * }
-     * @return ItemIterator<Google\Cloud\BigQuery\Job>
+     * @return \Generator<Google\Cloud\BigQuery\Job>
      */
     public function jobs(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $job) {
-                    return new Job(
-                        $this->connection,
-                        $job['jobReference']['jobId'],
-                        $this->projectId,
-                        $this->mapper,
-                        $job
-                    );
-                },
-                [$this->connection, 'listJobs'],
-                $options + ['project' => $this->projectId],
-                [
-                    'itemsKey' => 'jobs',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+        do {
+            $response = $this->connection->listJobs($options + ['projectId' => $this->projectId]);
+
+            if (!isset($response['jobs'])) {
+                return;
+            }
+
+            foreach ($response['jobs'] as $job) {
+                yield new Job(
+                    $this->connection,
+                    $job['jobReference']['jobId'],
+                    $this->projectId,
+                    $job,
+                    $this->mapper
+                );
+            }
+
+            $options['pageToken'] = isset($response['nextPageToken']) ? $response['nextPageToken'] : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -405,12 +404,7 @@ class BigQueryClient
      */
     public function dataset($id)
     {
-        return new Dataset(
-            $this->connection,
-            $id,
-            $this->projectId,
-            $this->mapper
-        );
+        return new Dataset($this->connection, $id, $this->projectId);
     }
 
     /**
@@ -431,38 +425,32 @@ class BigQueryClient
      *     Configuration options.
      *
      *     @type bool $all Whether to list all datasets, including hidden ones.
-     *           **Defaults to** `false`.
-     *     @type int $maxResults Maximum number of results to return per page.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
+     *     @type int $maxResults Maximum number of results to return.
      * }
-     * @return ItemIterator<Google\Cloud\BigQuery\Dataset>
+     * @return \Generator<Google\Cloud\BigQuery\Dataset>
      */
     public function datasets(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $dataset) {
-                    return new Dataset(
-                        $this->connection,
-                        $dataset['datasetReference']['datasetId'],
-                        $this->projectId,
-                        $this->mapper,
-                        $dataset
-                    );
-                },
-                [$this->connection, 'listDatasets'],
-                $options + ['projectId' => $this->projectId],
-                [
-                    'itemsKey' => 'datasets',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+        do {
+            $response = $this->connection->listDatasets($options + ['projectId' => $this->projectId]);
+
+            if (!isset($response['datasets'])) {
+                return;
+            }
+
+            foreach ($response['datasets'] as $dataset) {
+                yield new Dataset(
+                    $this->connection,
+                    $dataset['datasetReference']['datasetId'],
+                    $this->projectId,
+                    $dataset
+                );
+            }
+
+            $options['pageToken'] = isset($response['nextPageToken']) ? $response['nextPageToken'] : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -499,13 +487,7 @@ class BigQueryClient
             ]
         ] + $options);
 
-        return new Dataset(
-            $this->connection,
-            $id,
-            $this->projectId,
-            $this->mapper,
-            $response
-        );
+        return new Dataset($this->connection, $id, $this->projectId, $response);
     }
 
     /**
@@ -549,7 +531,7 @@ class BigQueryClient
      * $int64 = $bigQuery->int64('9223372036854775807');
      * ```
      *
-     * @param string $value The 64 bit integer value in string format.
+     * @param string $value
      * @return Int64
      */
     public function int64($value)

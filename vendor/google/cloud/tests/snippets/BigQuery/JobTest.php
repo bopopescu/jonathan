@@ -20,7 +20,6 @@ namespace Google\Cloud\Tests\Snippets\BigQuery;
 use Google\Cloud\BigQuery\Connection\ConnectionInterface;
 use Google\Cloud\BigQuery\Job;
 use Google\Cloud\BigQuery\QueryResults;
-use Google\Cloud\BigQuery\ValueMapper;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
 use Prophecy\Argument;
 
@@ -40,13 +39,10 @@ class JobTest extends SnippetTestCase
 
     public function getJob($connection, array $info = [])
     {
-        $mapper = $this->prophesize(ValueMapper::class);
-
         return new Job(
             $connection->reveal(),
             $this->identity['jobId'],
             $this->identity['projectId'],
-            $mapper->reveal(),
             $info
         );
     }
@@ -153,23 +149,5 @@ class JobTest extends SnippetTestCase
         $snippet->addLocal('job', $job);
         $snippet->replace('sleep(1);', '');
         $snippet->invoke();
-    }
-
-    public function testId()
-    {
-        $snippet = $this->snippetFromMethod(Job::class, 'id');
-        $snippet->addLocal('job', $this->getJob($this->connection, []));
-        $res = $snippet->invoke();
-
-        $this->assertEquals($res->output(), $this->identity['jobId']);
-    }
-
-    public function testIdentity()
-    {
-        $snippet = $this->snippetFromMethod(Job::class, 'identity');
-        $snippet->addLocal('job', $this->getJob($this->connection, []));
-        $res = $snippet->invoke();
-
-        $this->assertEquals($res->output(), $this->identity['projectId']);
     }
 }

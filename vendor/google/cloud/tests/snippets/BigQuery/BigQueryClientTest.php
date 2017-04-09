@@ -26,9 +26,8 @@ use Google\Cloud\BigQuery\Connection\ConnectionInterface;
 use Google\Cloud\BigQuery\Dataset;
 use Google\Cloud\BigQuery\Job;
 use Google\Cloud\BigQuery\QueryResults;
-use Google\Cloud\Core\Int64;
-use Google\Cloud\Core\Iterator\ItemIterator;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
+use Google\Cloud\Int64;
 use Prophecy\Argument;
 
 /**
@@ -70,6 +69,14 @@ class BigQueryClientTest extends SnippetTestCase
     public function testClass()
     {
         $snippet = $this->snippetFromClass(BigQueryClient::class);
+        $res = $snippet->invoke('bigQuery');
+
+        $this->assertInstanceOf(BigQueryClient::class, $res->returnVal());
+    }
+
+    public function testClassDirectInstantiation()
+    {
+        $snippet = $this->snippetFromClass(BigQueryClient::class, 1);
         $res = $snippet->invoke('bigQuery');
 
         $this->assertInstanceOf(BigQueryClient::class, $res->returnVal());
@@ -233,7 +240,7 @@ class BigQueryClientTest extends SnippetTestCase
         $this->client->setConnection($this->connection->reveal());
         $res = $snippet->invoke('jobs');
 
-        $this->assertInstanceOf(ItemIterator::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
         $this->assertEquals('job', trim($res->output()));
     }
 
@@ -265,7 +272,7 @@ class BigQueryClientTest extends SnippetTestCase
         $this->client->setConnection($this->connection->reveal());
         $res = $snippet->invoke('datasets');
 
-        $this->assertInstanceOf(ItemIterator::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
         $this->assertEquals('dataset', trim($res->output()));
     }
 

@@ -17,7 +17,7 @@
 
 namespace Google\Cloud\Tests\System\Logging;
 
-use Google\Cloud\Core\ExponentialBackoff;
+use Google\Cloud\ExponentialBackoff;
 
 /**
  * @group logging

@@ -17,8 +17,8 @@
 
 namespace Google\Cloud\BigQuery;
 
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\BigQuery\Connection\ConnectionInterface;
-use Google\Cloud\Core\Exception\NotFoundException;
 
 /**
  * [Jobs](https://cloud.google.com/bigquery/docs/reference/v2/jobs) are objects
@@ -28,7 +28,7 @@ use Google\Cloud\Core\Exception\NotFoundException;
 class Job
 {
     /**
-     * @var ConnectionInterface Represents a connection to BigQuery.
+     * @var ConnectionInterface $connection Represents a connection to BigQuery.
      */
     private $connection;
 
@@ -52,15 +52,15 @@ class Job
      *        BigQuery.
      * @param string $id The job's ID.
      * @param string $projectId The project's ID.
-     * @param ValueMapper $mapper Maps values between PHP and BigQuery.
      * @param array $info [optional] The job's metadata.
+     * @param ValueMapper $mapper Maps values between PHP and BigQuery.
      */
     public function __construct(
         ConnectionInterface $connection,
         $id,
         $projectId,
-        ValueMapper $mapper,
-        array $info = []
+        array $info = [],
+        ValueMapper $mapper = null
     ) {
         $this->connection = $connection;
         $this->info = $info;
@@ -134,7 +134,7 @@ class Job
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type int $maxResults Maximum number of results to read per page.
+     *     @type int $maxResults Maximum number of results to read.
      *     @type int $startIndex Zero-based index of the starting row.
      *     @type int $timeoutMs How long to wait for the query to complete, in
      *           milliseconds. **Defaults to** `10000` milliseconds (10 seconds).
@@ -151,7 +151,7 @@ class Job
             $this->identity['projectId'],
             $response,
             $options,
-            $this->mapper
+            $this->mapper ?: new ValueMapper(false)
         );
     }
 

@@ -17,21 +17,27 @@
 
 namespace Google\Cloud\Storage;
 
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\ClientTrait;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
+use Google\Cloud\ClientTrait;
 use Google\Cloud\Storage\Connection\ConnectionInterface;
 use Google\Cloud\Storage\Connection\Rest;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
- * Google Cloud Storage allows you to store and retrieve data on Google's
- * infrastructure. Find more information at the
+ * Google Cloud Storage client. Allows you to store and retrieve data on
+ * Google's infrastructure. Find more information at
  * [Google Cloud Storage API docs](https://developers.google.com/storage).
  *
  * Example:
  * ```
+ * use Google\Cloud\ServiceBuilder;
+ *
+ * $cloud = new ServiceBuilder();
+ *
+ * $storage = $cloud->storage();
+ * ```
+ *
+ * ```
+ * // StorageClient can be instantiated directly.
  * use Google\Cloud\Storage\StorageClient;
  *
  * $storage = new StorageClient();
@@ -39,17 +45,14 @@ use Psr\Cache\CacheItemPoolInterface;
  */
 class StorageClient
 {
-    use ArrayTrait;
     use ClientTrait;
-
-    const VERSION = '1.0.0';
 
     const FULL_CONTROL_SCOPE = 'https://www.googleapis.com/auth/devstorage.full_control';
     const READ_ONLY_SCOPE = 'https://www.googleapis.com/auth/devstorage.read_only';
     const READ_WRITE_SCOPE = 'https://www.googleapis.com/auth/devstorage.read_write';
 
     /**
-     * @var ConnectionInterface Represents a connection to Storage.
+     * @var ConnectionInterface $connection Represents a connection to Storage.
      */
     protected $connection;
 
@@ -130,34 +133,29 @@ class StorageClient
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type int $maxResults Maximum number of results to return per
-     *           requested page.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
+     *     @type integer $maxResults Maximum number of results to return per
+     *           request.
      *     @type string $prefix Filter results with this prefix.
      *     @type string $projection Determines which properties to return. May
      *           be either 'full' or 'noAcl'.
      *     @type string $fields Selector which will cause the response to only
      *           return the specified fields.
      * }
-     * @return ItemIterator<Google\Cloud\Storage\Bucket>
+     * @return \Generator<Google\Cloud\Storage\Bucket>
      */
     public function buckets(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $bucket) {
-                    return new Bucket($this->connection, $bucket['name'], $bucket);
-                },
-                [$this->connection, 'listBuckets'],
-                $options + ['project' => $this->projectId],
-                ['resultLimit' => $resultLimit]
-            )
-        );
+        do {
+            $response = $this->connection->listBuckets($options + ['project' => $this->projectId]);
+
+            foreach ($response['items'] as $bucket) {
+                yield new Bucket($this->connection, $bucket['name'], $bucket);
+            }
+
+            $options['pageToken'] = isset($response['nextPageToken']) ? $response['nextPageToken'] : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -186,16 +184,12 @@ class StorageClient
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type string $predefinedAcl Predefined ACL to apply to the bucket.
-     *           Acceptable values include, `"authenticatedRead"`,
-     *           `"bucketOwnerFullControl"`, `"bucketOwnerRead"`, `"private"`,
-     *           `"projectPrivate"`, and `"publicRead"`.
+     *     @type string $predefinedAcl Apply a predefined set of access controls
+     *           to this bucket.
      *     @type string $predefinedDefaultObjectAcl Apply a predefined set of
      *           default object access controls to this bucket.
      *     @type string $projection Determines which properties to return. May
-     *           be either `"full"` or `"noAcl"`. **Defaults to** `"noAcl"`,
-     *           unless the bucket resource specifies acl or defaultObjectAcl
-     *           properties, when it defaults to `"full"`.
+     *           be either 'full' or 'noAcl'.
      *     @type string $fields Selector which will cause the response to only
      *           return the specified fields.
      *     @type array $acl Access controls on the bucket.
@@ -211,10 +205,8 @@ class StorageClient
      *           current bucket's logs.
      *     @type string $storageClass The bucket's storage class. This defines
      *           how objects in the bucket are stored and determines the SLA and
-     *           the cost of storage. Acceptable values include
-     *           `"MULTI_REGIONAL"`, `"REGIONAL"`, `"NEARLINE"`, `"COLDLINE"`,
-     *           `"STANDARD"` and `"DURABLE_REDUCED_AVAILABILITY"`.
-     *           **Defaults to** `STANDARD`.
+     *           the cost of storage. Values include MULTI_REGIONAL, REGIONAL,
+     *           NEARLINE, COLDLINE, STANDARD and DURABLE_REDUCED_AVAILABILITY.
      *     @type array $versioning The bucket's versioning configuration.
      *     @type array $website The bucket's website configuration.
      * }
@@ -224,26 +216,5 @@ class StorageClient
     {
         $response = $this->connection->insertBucket($options + ['name' => $name, 'project' => $this->projectId]);
         return new Bucket($this->connection, $name, $response);
-    }
-
-    /**
-     * Registers this StorageClient as the handler for stream reading/writing.
-     *
-     * @param string $protocol The name of the protocol to use. **Defaults to** `gs`.
-     * @throws \RuntimeException
-     */
-    public function registerStreamWrapper($protocol = null)
-    {
-        return StreamWrapper::register($this, $protocol);
-    }
-
-    /**
-     * Unregisters the SteamWrapper
-     *
-     * @param string $protocol The name of the protocol to unregister. **Defaults to** `gs`.
-     */
-    public function unregisterStreamWrapper($protocol = null)
-    {
-        StreamWrapper::unregister($protocol);
     }
 }

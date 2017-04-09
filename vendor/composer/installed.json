@@ -554,102 +554,6 @@
         ]
     },
     {
-        "name": "google/cloud",
-        "version": "v0.26.0",
-        "version_normalized": "0.26.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/GoogleCloudPlatform/google-cloud-php.git",
-            "reference": "2b848207b70fd096e1cdb21ab7716bfba549769f"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/GoogleCloudPlatform/google-cloud-php/zipball/2b848207b70fd096e1cdb21ab7716bfba549769f",
-            "reference": "2b848207b70fd096e1cdb21ab7716bfba549769f",
-            "shasum": ""
-        },
-        "require": {
-            "google/auth": "^0.11",
-            "guzzlehttp/guzzle": "^5.3|^6.0",
-            "guzzlehttp/psr7": "^1.2",
-            "monolog/monolog": "~1",
-            "php": ">=5.5",
-            "psr/http-message": "1.0.*",
-            "rize/uri-template": "~0.3"
-        },
-        "require-dev": {
-            "erusev/parsedown": "^1.6",
-            "google/gax": "^0.8",
-            "google/proto-client-php": "^0.11",
-            "league/json-guard": "^0.3",
-            "phpdocumentor/reflection": "^3.0",
-            "phpunit/phpunit": "4.8.*",
-            "squizlabs/php_codesniffer": "2.*",
-            "symfony/console": "^3.0",
-            "vierbergenlars/php-semver": "^3.0"
-        },
-        "suggest": {
-            "google/gax": "Required to support gRPC",
-            "google/proto-client-php": "Required to support gRPC"
-        },
-        "time": "2017-04-07T21:41:09+00:00",
-        "type": "library",
-        "extra": {
-            "component": {
-                "id": "google-cloud",
-                "target": "git@github.com:jdpedrie-gcp/google-cloud-php.git",
-                "path": "src",
-                "entry": "ServiceBuilder.php"
-            }
-        },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Google\\Cloud\\": "src"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "Apache-2.0"
-        ],
-        "authors": [
-            {
-                "name": "John Pedrie",
-                "email": "john@pedrie.com"
-            },
-            {
-                "name": "Dave Supplee",
-                "email": "dwsupplee@gmail.com"
-            }
-        ],
-        "description": "Google Cloud Client Library",
-        "homepage": "http://github.com/GoogleCloudPlatform/google-cloud-php",
-        "keywords": [
-            "big query",
-            "bigquery",
-            "cloud",
-            "datastore",
-            "gcs",
-            "google",
-            "google api",
-            "google api client",
-            "google apis",
-            "google apis client",
-            "google cloud",
-            "google cloud platform",
-            "language",
-            "natural language",
-            "pub sub",
-            "pubsub",
-            "speech",
-            "stackdriver logging",
-            "storage",
-            "translate",
-            "translation",
-            "vision"
-        ]
-    },
-    {
         "name": "symfony/filesystem",
         "version": "v3.2.7",
         "version_normalized": "3.2.7.0",
@@ -1052,5 +956,228 @@
             "video",
             "video processing"
         ]
+    },
+    {
+        "name": "google/cloud",
+        "version": "v0.20.2",
+        "version_normalized": "0.20.2.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/GoogleCloudPlatform/google-cloud-php.git",
+            "reference": "7175deb3c4b07d790a52214ba209986404857d51"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/GoogleCloudPlatform/google-cloud-php/zipball/7175deb3c4b07d790a52214ba209986404857d51",
+            "reference": "7175deb3c4b07d790a52214ba209986404857d51",
+            "shasum": ""
+        },
+        "require": {
+            "google/auth": "^0.11",
+            "guzzlehttp/guzzle": "^5.3|^6.0",
+            "guzzlehttp/psr7": "^1.2",
+            "monolog/monolog": "~1",
+            "php": ">=5.5",
+            "psr/http-message": "1.0.*",
+            "rize/uri-template": "~0.3"
+        },
+        "require-dev": {
+            "erusev/parsedown": "^1.6",
+            "google/gax": "^0.6",
+            "google/proto-client-php": "^0.7",
+            "james-heinrich/getid3": "^1.9",
+            "league/json-guard": "^0.3",
+            "phpdocumentor/reflection": "^3.0",
+            "phpunit/phpunit": "4.8.*",
+            "squizlabs/php_codesniffer": "2.*",
+            "symfony/console": "^3.0",
+            "vierbergenlars/php-semver": "^3.0"
+        },
+        "suggest": {
+            "google/gax": "Required to support gRPC",
+            "google/proto-client-php": "Required to support gRPC",
+            "james-heinrich/getid3": "Allows the Google Cloud Speech client to determine sample rate and encoding of audio inputs"
+        },
+        "time": "2017-02-10T15:09:33+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Google\\Cloud\\": "src"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "Apache-2.0"
+        ],
+        "authors": [
+            {
+                "name": "John Pedrie",
+                "email": "john@pedrie.com"
+            },
+            {
+                "name": "Dave Supplee",
+                "email": "dwsupplee@gmail.com"
+            }
+        ],
+        "description": "Google Cloud Client Library",
+        "homepage": "http://github.com/GoogleCloudPlatform/google-cloud-php",
+        "keywords": [
+            "big query",
+            "bigquery",
+            "cloud",
+            "datastore",
+            "gcs",
+            "google",
+            "google api",
+            "google api client",
+            "google apis",
+            "google apis client",
+            "google cloud",
+            "google cloud platform",
+            "natural language",
+            "pub sub",
+            "pubsub",
+            "speech",
+            "stackdriver logging",
+            "storage",
+            "translate",
+            "translation",
+            "vision"
+        ]
+    },
+    {
+        "name": "league/flysystem",
+        "version": "1.0.37",
+        "version_normalized": "1.0.37.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/thephpleague/flysystem.git",
+            "reference": "78b5cc4feb61a882302df4fbaf63b7662e5e4ccd"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/78b5cc4feb61a882302df4fbaf63b7662e5e4ccd",
+            "reference": "78b5cc4feb61a882302df4fbaf63b7662e5e4ccd",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.5.9"
+        },
+        "conflict": {
+            "league/flysystem-sftp": "<1.0.6"
+        },
+        "require-dev": {
+            "ext-fileinfo": "*",
+            "mockery/mockery": "~0.9",
+            "phpspec/phpspec": "^2.2",
+            "phpunit/phpunit": "~4.8"
+        },
+        "suggest": {
+            "ext-fileinfo": "Required for MimeType",
+            "league/flysystem-aws-s3-v2": "Allows you to use S3 storage with AWS SDK v2",
+            "league/flysystem-aws-s3-v3": "Allows you to use S3 storage with AWS SDK v3",
+            "league/flysystem-azure": "Allows you to use Windows Azure Blob storage",
+            "league/flysystem-cached-adapter": "Flysystem adapter decorator for metadata caching",
+            "league/flysystem-copy": "Allows you to use Copy.com storage",
+            "league/flysystem-dropbox": "Allows you to use Dropbox storage",
+            "league/flysystem-eventable-filesystem": "Allows you to use EventableFilesystem",
+            "league/flysystem-rackspace": "Allows you to use Rackspace Cloud Files",
+            "league/flysystem-sftp": "Allows you to use SFTP server storage via phpseclib",
+            "league/flysystem-webdav": "Allows you to use WebDAV storage",
+            "league/flysystem-ziparchive": "Allows you to use ZipArchive adapter"
+        },
+        "time": "2017-03-22T15:43:14+00:00",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "1.1-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "League\\Flysystem\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Frank de Jonge",
+                "email": "info@frenky.net"
+            }
+        ],
+        "description": "Filesystem abstraction: Many filesystems, one API.",
+        "keywords": [
+            "Cloud Files",
+            "WebDAV",
+            "abstraction",
+            "aws",
+            "cloud",
+            "copy.com",
+            "dropbox",
+            "file systems",
+            "files",
+            "filesystem",
+            "filesystems",
+            "ftp",
+            "rackspace",
+            "remote",
+            "s3",
+            "sftp",
+            "storage"
+        ]
+    },
+    {
+        "name": "superbalist/flysystem-google-storage",
+        "version": "5.0.0",
+        "version_normalized": "5.0.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/Superbalist/flysystem-google-cloud-storage.git",
+            "reference": "7528577254c85f15f182e3e59677ce5670cb4a7f"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/Superbalist/flysystem-google-cloud-storage/zipball/7528577254c85f15f182e3e59677ce5670cb4a7f",
+            "reference": "7528577254c85f15f182e3e59677ce5670cb4a7f",
+            "shasum": ""
+        },
+        "require": {
+            "google/cloud": "^0.10.2|^0.11.0|^0.12.0|^0.13.0|^0.20.0",
+            "league/flysystem": "~1.0",
+            "php": ">=5.5.0"
+        },
+        "require-dev": {
+            "mockery/mockery": "0.9.*",
+            "phpunit/phpunit": "~4.0"
+        },
+        "time": "2017-04-03T13:23:49+00:00",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "1.0-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Superbalist\\Flysystem\\GoogleStorage\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Superbalist.com a division of Takealot Online (Pty) Ltd",
+                "email": "info@superbalist.com"
+            }
+        ],
+        "description": "Flysystem adapter for Google Cloud Storage"
     }
 ]

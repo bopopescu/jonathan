@@ -34,15 +34,23 @@ class SpeechClientTest extends SnippetTestCase
 
     public function setUp()
     {
-        $this->testFile = "'" . __DIR__ . '/../fixtures/Speech/demo.flac' . "'";
+        $this->testFile = "'" . __DIR__ .'/../fixtures/Speech/demo.flac' . "'";
         $this->connection = $this->prophesize(ConnectionInterface::class);
-        $this->client = new \SpeechClientStub(['languageCode' => 'en-US']);
+        $this->client = new \SpeechClientStub;
         $this->client->setConnection($this->connection->reveal());
     }
 
     public function testClass()
     {
         $snippet = $this->snippetFromClass(SpeechClient::class);
+
+        $res = $snippet->invoke('speech');
+        $this->assertInstanceOf(SpeechClient::class, $res->returnVal());
+    }
+
+    public function testClassDirectInstantiation()
+    {
+        $snippet = $this->snippetFromClass(SpeechClient::class, 1);
 
         $res = $snippet->invoke('speech');
         $this->assertInstanceOf(SpeechClient::class, $res->returnVal());
@@ -55,7 +63,7 @@ class SpeechClientTest extends SnippetTestCase
         $snippet->replace('__DIR__  . \'/audio.flac\'', $this->testFile);
 
         $transcript = 'hello world';
-        $this->connection->recognize(Argument::any())
+        $this->connection->syncRecognize(Argument::any())
             ->shouldBeCalled()
             ->willReturn([
                 'results' => [
@@ -82,7 +90,7 @@ class SpeechClientTest extends SnippetTestCase
         $snippet->replace('__DIR__  . \'/audio.flac\'', $this->testFile);
 
         $transcript = 'hello world';
-        $this->connection->recognize(Argument::any())
+        $this->connection->syncRecognize(Argument::any())
             ->shouldBeCalled()
             ->willReturn([
                 'results' => [
@@ -108,7 +116,7 @@ class SpeechClientTest extends SnippetTestCase
         $snippet->addLocal('speech', $this->client);
         $snippet->replace('__DIR__  . \'/audio.flac\'', $this->testFile);
 
-        $this->connection->longRunningRecognize(Argument::any())
+        $this->connection->asyncRecognize(Argument::any())
             ->shouldBeCalled()
             ->willReturn(['done' => false, 'name' => 'foo']);
 
@@ -139,7 +147,7 @@ class SpeechClientTest extends SnippetTestCase
         $snippet->addLocal('speech', $this->client);
         $snippet->replace('__DIR__  . \'/audio.flac\'', $this->testFile);
 
-        $this->connection->longRunningRecognize(Argument::any())
+        $this->connection->asyncRecognize(Argument::any())
             ->shouldBeCalled()
             ->willReturn(['done' => false, 'name' => 'foo']);
 

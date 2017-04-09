@@ -23,10 +23,6 @@ namespace Google\Cloud\BigQuery;
  *
  * Example:
  * ```
- * use Google\Cloud\BigQuery\BigQueryClient;
- *
- * $bigQuery = new BigQueryClient();
- *
  * $timestamp = $bigQuery->timestamp(new \DateTime('2003-02-05 11:15:02.421827Z'));
  * ```
  */

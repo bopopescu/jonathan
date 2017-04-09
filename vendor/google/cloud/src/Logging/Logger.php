@@ -17,20 +17,19 @@
 
 namespace Google\Cloud\Logging;
 
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
-use Google\Cloud\Core\ValidateTrait;
+use Google\Cloud\ArrayTrait;
 use Google\Cloud\Logging\Connection\ConnectionInterface;
+use Google\Cloud\ValidateTrait;
 
 /**
  * A logger used to write entries to Google Stackdriver Logging.
  *
  * Example:
  * ```
- * use Google\Cloud\Logging\LoggingClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $logging = new LoggingClient();
+ * $cloud = new ServiceBuilder();
+ * $logging = $cloud->logging();
  *
  * $logger = $logging->logger('my-log');
  * ```
@@ -101,15 +100,17 @@ class Logger
     private $labels;
 
     /**
+     * @codingStandardsIgnoreStart
      * @param ConnectionInterface $connection Represents a connection to
      *        Stackdriver Logging.
      * @param string $name The name of the log to write entries to.
      * @param string $projectId The project's ID.
      * @param array $resource [optional] The
-     *        [monitored resource](https://cloud.google.com/logging/docs/reference/v2/rest/v2/MonitoredResource)
+     *        [monitored resource](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/MonitoredResource)
      *        to associate log entries with. **Defaults to** type global.
      * @param array $labels [optional] A set of user-defined (key, value) data
      *        that provides additional information about the log entries.
+     * @codingStandardsIgnoreEnd
      */
     public function __construct(
         ConnectionInterface $connection,
@@ -184,37 +185,33 @@ class Logger
      *           **Defaults to** `"timestamp asc"`.
      *     @type int $pageSize The maximum number of results to return per
      *           request.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
      * }
-     * @return ItemIterator<Google\Cloud\Logging\Entry>
+     * @return \Generator<Google\Cloud\Logging\Entry>
      */
     public function entries(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
         $logNameFilter = "logName = $this->formattedName";
         $options += [
+            'pageToken' => null,
             'resourceNames' => ["projects/$this->projectId"],
             'filter' => isset($options['filter'])
                 ? $options['filter'] .= " AND $logNameFilter"
                 : $logNameFilter
         ];
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $entry) {
-                    return new Entry($entry);
-                },
-                [$this->connection, 'listEntries'],
-                $options,
-                [
-                    'itemsKey' => 'entries',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+        do {
+            $response = $this->connection->listEntries($options);
+
+            if (!isset($response['entries'])) {
+                return;
+            }
+
+            foreach ($response['entries'] as $entry) {
+                yield new Entry($entry);
+            }
+
+            $options['pageToken'] = isset($response['nextPageToken']) ? $response['nextPageToken'] : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -245,8 +242,8 @@ class Logger
      *     ]
      * ]);
      * ```
-     *
-     * @see https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry LogEntry resource documentation.
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/LogEntry LogEntry resource documentation.
      *
      * @param array|string $data The data to log. When providing a string the
      *        data will be stored as a `textPayload` type. When providing an
@@ -255,24 +252,24 @@ class Logger
      *     Configuration options.
      *
      *     @type array $resource The
-     *           [monitored resource](https://cloud.google.com/logging/docs/api/reference/rest/v2/MonitoredResource)
+     *           [monitored resource](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/MonitoredResource)
      *           to associate this log entry with. **Defaults to** type global.
      *     @type array $httpRequest Information about the HTTP request
      *           associated with this log entry, if applicable. Please see
-     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/v2/LogEntry#httprequest)
+     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/LogEntry#httprequest)
      *           for more information.
      *     @type array $labels A set of user-defined (key, value) data that
      *           provides additional information about the log entry.
      *     @type array $operation Additional information about a potentially
      *           long-running operation with which a log entry is associated.
-     *           Please see
-     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/v2/LogEntry#logentryoperation)
+     *           Please see [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/LogEntry#logentryoperation)
      *           for more information.
      *     @type string|int $severity The severity of the log entry. **Defaults to**
      *           `"DEFAULT"`.
      * }
      * @return Entry
      * @throws \InvalidArgumentException
+     * @codingStandardsIgnoreEnd
      */
     public function entry($data, array $options = [])
     {

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2017, Google Inc. All rights reserved.
+ * Copyright 2016, Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ class ConfigServiceV2Client
     /**
      * The code generator version, to be included in the agent header.
      */
-    const CODEGEN_VERSION = '0.0.5';
+    const CODEGEN_VERSION = '0.1.0';
 
     private static $projectNameTemplate;
     private static $sinkNameTemplate;
@@ -202,17 +202,6 @@ class ConfigServiceV2Client
         return $pageStreamingDescriptors;
     }
 
-    private static function getGapicVersion()
-    {
-        if (file_exists(__DIR__.'/../VERSION')) {
-            return trim(file_get_contents(__DIR__.'/../VERSION'));
-        } elseif (class_exists('\Google\Cloud\ServiceBuilder')) {
-            return \Google\Cloud\ServiceBuilder::VERSION;
-        } else {
-            return;
-        }
-    }
-
     // TODO(garrettjones): add channel (when supported in gRPC)
     /**
      * Constructor.
@@ -238,6 +227,9 @@ class ConfigServiceV2Client
      *                              that don't use retries. For calls that use retries,
      *                              set the timeout in RetryOptions.
      *                              Default: 30000 (30 seconds)
+     *     @type string $appName The codename of the calling service. Default 'gax'.
+     *     @type string $appVersion The version of the calling service.
+     *                              Default: the current version of GAX.
      *     @type \Google\Auth\CredentialsLoader $credentialsLoader
      *                              A CredentialsLoader object created using the
      *                              Google\Auth library.
@@ -257,17 +249,18 @@ class ConfigServiceV2Client
             ],
             'retryingOverride' => null,
             'timeoutMillis' => self::DEFAULT_TIMEOUT_MILLIS,
-            'libName' => null,
-            'libVersion' => null,
+            'appName' => 'gax',
+            'appVersion' => AgentHeaderDescriptor::getGaxVersion(),
         ];
         $options = array_merge($defaultOptions, $options);
 
-        $gapicVersion = $options['libVersion'] ?: self::getGapicVersion();
-
         $headerDescriptor = new AgentHeaderDescriptor([
-            'libName' => $options['libName'],
-            'libVersion' => $options['libVersion'],
-            'gapicVersion' => $gapicVersion,
+            'clientName' => $options['appName'],
+            'clientVersion' => $options['appVersion'],
+            'codeGenName' => self::CODEGEN_NAME,
+            'codeGenVersion' => self::CODEGEN_VERSION,
+            'gaxVersion' => AgentHeaderDescriptor::getGaxVersion(),
+            'phpVersion' => phpversion(),
         ]);
 
         $defaultDescriptors = ['headerDescriptor' => $headerDescriptor];
@@ -534,7 +527,7 @@ class ConfigServiceV2Client
     /**
      * Updates a sink. If the named sink doesn't exist, then this method is
      * identical to
-     * [sinks.create](https://cloud.google.com/logging/docs/api/reference/rest/v2/projects.sinks/create).
+     * [sinks.create](/logging/docs/api/reference/rest/v2/projects.sinks/create).
      * If the named sink does exist, then this method replaces the following
      * fields in the existing sink with values from the new sink: `destination`,
      * `filter`, `output_version_format`, `start_time`, and `end_time`.
@@ -568,7 +561,7 @@ class ConfigServiceV2Client
      *
      *     @type bool $uniqueWriterIdentity
      *          Optional. See
-     *          [sinks.create](https://cloud.google.com/logging/docs/api/reference/rest/v2/projects.sinks/create)
+     *          [sinks.create](/logging/docs/api/reference/rest/v2/projects.sinks/create)
      *          for a description of this field.  When updating a sink, the effect of this
      *          field on the value of `writer_identity` in the updated sink depends on both
      *          the old and new values of this field:

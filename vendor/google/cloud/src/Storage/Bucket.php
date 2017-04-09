@@ -17,14 +17,9 @@
 
 namespace Google\Cloud\Storage;
 
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\Exception\NotFoundException;
-use Google\Cloud\Core\Exception\ServiceException;
-use Google\Cloud\Core\Iam\Iam;
-use Google\Cloud\Core\Upload\ResumableUploader;
-use Google\Cloud\Core\Upload\StreamableUploader;
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\Storage\Connection\ConnectionInterface;
-use Google\Cloud\Storage\Connection\IamBucket;
+use Google\Cloud\Upload\ResumableUploader;
 use GuzzleHttp\Psr7;
 use Psr\Http\Message\StreamInterface;
 
@@ -34,16 +29,16 @@ use Psr\Http\Message\StreamInterface;
  *
  * Example:
  * ```
- * use Google\Cloud\Storage\StorageClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $storage = new StorageClient();
+ * $cloud = new ServiceBuilder();
+ * $storage = $cloud->storage();
  *
  * $bucket = $storage->bucket('my-bucket');
  * ```
  */
 class Bucket
 {
-    use ArrayTrait;
     use EncryptionTrait;
 
     /**
@@ -67,14 +62,9 @@ class Bucket
     private $identity;
 
     /**
-     * @var array|null The bucket's metadata.
+     * @var array The bucket's metadata.
      */
     private $info;
-
-    /**
-     * @var Iam
-     */
-    private $iam;
 
     /**
      * @param ConnectionInterface $connection Represents a connection to Cloud
@@ -192,12 +182,11 @@ class Bucket
      * @see https://cloud.google.com/storage/docs/json_api/v1/objects/insert Objects insert API documentation.
      * @see https://cloud.google.com/storage/docs/encryption#customer-supplied Customer-supplied encryption keys.
      *
-     * @param string|resource|StreamInterface|null $data The data to be uploaded.
+     * @param string|resource|StreamInterface $data The data to be uploaded.
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type string $name The name of the destination. Required when data is
-     *           of type string or null.
+     *     @type string $name The name of the destination.
      *     @type bool $resumable Indicates whether or not the upload will be
      *           performed in a resumable fashion.
      *     @type bool $validate Indicates whether or not validation will be
@@ -209,9 +198,10 @@ class Bucket
      *           you have increased reliability at the risk of higher overhead.
      *           It is recommended to not use chunking.
      *     @type string $predefinedAcl Predefined ACL to apply to the object.
-     *           Acceptable values include, `"authenticatedRead"`,
-     *           `"bucketOwnerFullControl"`, `"bucketOwnerRead"`, `"private"`,
-     *           `"projectPrivate"`, and `"publicRead"`.
+     *           Acceptable values include,
+     *           `"authenticatedRead"`, `"bucketOwnerFullControl"`,
+     *           `"bucketOwnerRead"`, `"private"`, `"projectPrivate"`, and
+     *           `"publicRead"`.
      *     @type array $metadata The available options for metadata are outlined
      *           at the [JSON API docs](https://cloud.google.com/storage/docs/json_api/v1/objects/insert#request-body).
      *     @type string $encryptionKey A base64 encoded AES-256 customer-supplied
@@ -227,8 +217,8 @@ class Bucket
      */
     public function upload($data, array $options = [])
     {
-        if ($this->isObjectNameRequired($data) && !isset($options['name'])) {
-            throw new \InvalidArgumentException('A name is required when data is of type string or null.');
+        if (is_string($data) && !isset($options['name'])) {
+            throw new \InvalidArgumentException('A name is required when data is of type string.');
         }
 
         $encryptionKey = isset($options['encryptionKey']) ? $options['encryptionKey'] : null;
@@ -275,16 +265,19 @@ class Bucket
      * uploads.
      * @see https://cloud.google.com/storage/docs/json_api/v1/objects/insert Objects insert API documentation.
      *
-     * @param string|resource|StreamInterface|null $data The data to be uploaded.
+     * @param string|resource|StreamInterface $data The data to be uploaded.
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type string $name The name of the destination. Required when data is
-     *           of type string or null.
+     *     @type string $name The name of the destination.
      *     @type bool $validate Indicates whether or not validation will be
      *           applied using md5 hashing functionality. If true and the
      *           calculated hash does not match that of the upstream server the
      *           upload will be rejected.
+     *     @type int $chunkSize If provided the upload will be done in chunks.
+     *           The size must be in multiples of 262144 bytes. With chunking
+     *           you have increased reliability at the risk of higher overhead.
+     *           It is recommended to not use chunking.
      *     @type string $predefinedAcl Predefined ACL to apply to the object.
      *           Acceptable values include `"authenticatedRead`",
      *           `"bucketOwnerFullControl`", `"bucketOwnerRead`", `"private`",
@@ -304,8 +297,8 @@ class Bucket
      */
     public function getResumableUploader($data, array $options = [])
     {
-        if ($this->isObjectNameRequired($data) && !isset($options['name'])) {
-            throw new \InvalidArgumentException('A name is required when data is of type string or null.');
+        if (is_string($data) && !isset($options['name'])) {
+            throw new \InvalidArgumentException('A name is required when data is of type string.');
         }
 
         return $this->connection->insertObject(
@@ -313,73 +306,6 @@ class Bucket
                 'bucket' => $this->identity['bucket'],
                 'data' => $data,
                 'resumable' => true
-            ]
-        );
-    }
-
-    /**
-     * Get a streamable uploader which can provide greater control over the
-     * upload process. This is useful for generating large files and uploading
-     * the contents in chunks.
-     *
-     * Example:
-     * ```
-     * $uploader = $bucket->getStreamableUploader(
-     *     'initial contents',
-     *     ['name' => 'data.txt']
-     * );
-     *
-     * // finish uploading the item
-     * $uploader->upload();
-     * ```
-     *
-     * @see https://cloud.google.com/storage/docs/json_api/v1/how-tos/upload#resumable Learn more about resumable
-     * uploads.
-     * @see https://cloud.google.com/storage/docs/json_api/v1/objects/insert Objects insert API documentation.
-     *
-     * @param string|resource|StreamInterface $data The data to be uploaded.
-     * @param array $options [optional] {
-     *     Configuration options.
-     *
-     *     @type string $name The name of the destination. Required when data is
-     *           of type string or null.
-     *     @type bool $validate Indicates whether or not validation will be
-     *           applied using md5 hashing functionality. If true and the
-     *           calculated hash does not match that of the upstream server the
-     *           upload will be rejected.
-     *     @type int $chunkSize If provided the upload will be done in chunks.
-     *           The size must be in multiples of 262144 bytes. With chunking
-     *           you have increased reliability at the risk of higher overhead.
-     *           It is recommended to not use chunking.
-     *     @type string $predefinedAcl Predefined ACL to apply to the object.
-     *           Acceptable values include, `"authenticatedRead"`,
-     *           `"bucketOwnerFullControl"`, `"bucketOwnerRead"`, `"private"`,
-     *           `"projectPrivate"`, and `"publicRead"`.
-     *     @type array $metadata The available options for metadata are outlined
-     *           at the [JSON API docs](https://cloud.google.com/storage/docs/json_api/v1/objects/insert#request-body).
-     *     @type string $encryptionKey A base64 encoded AES-256 customer-supplied
-     *           encryption key.
-     *     @type string $encryptionKeySHA256 Base64 encoded SHA256 hash of the
-     *           customer-supplied encryption key. This value will be calculated
-     *           from the `encryptionKey` on your behalf if not provided, but
-     *           for best performance it is recommended to pass in a cached
-     *           version of the already calculated SHA.
-     * }
-     * @return StreamableUploader
-     * @throws \InvalidArgumentException
-     */
-    public function getStreamableUploader($data, array $options = [])
-    {
-        if ($this->isObjectNameRequired($data) && !isset($options['name'])) {
-            throw new \InvalidArgumentException('A name is required when data is of type string or null.');
-        }
-
-        return $this->connection->insertObject(
-            $this->formatEncryptionHeaders($options) + [
-                'bucket' => $this->identity['bucket'],
-                'data' => $data,
-                'streamable' => true,
-                'validate' => false
             ]
         );
     }
@@ -454,42 +380,43 @@ class Bucket
      *           from the prefix, contain delimiter will have their name,
      *           truncated after the delimiter, returned in prefixes. Duplicate
      *           prefixes are omitted.
-     *     @type int $maxResults Maximum number of results to return per
-     *           request. **Defaults to** `1000`.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
+     *     @type integer $maxResults Maximum number of results to return per
+     *           request. Defaults to `1000`.
      *     @type string $prefix Filter results with this prefix.
      *     @type string $projection Determines which properties to return. May
-     *           be either `"full"` or `"noAcl"`.
+     *           be either 'full' or 'noAcl'.
      *     @type bool $versions If true, lists all versions of an object as
-     *           distinct results. **Defaults to** `false`.
+     *           distinct results. The default is false.
      *     @type string $fields Selector which will cause the response to only
      *           return the specified fields.
      * }
-     * @return ObjectIterator<Google\Cloud\Storage\StorageObject>
+     * @return \Generator<Google\Cloud\Storage\StorageObject>
      */
     public function objects(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
+        $includeVersions = isset($options['versions']) ? $options['versions'] : false;
 
-        return new ObjectIterator(
-            new ObjectPageIterator(
-                function (array $object) {
-                    return new StorageObject(
-                        $this->connection,
-                        $object['name'],
-                        $this->identity['bucket'],
-                        isset($object['generation']) ? $object['generation'] : null,
-                        $object
-                    );
-                },
-                [$this->connection, 'listObjects'],
-                $options + $this->identity,
-                ['resultLimit' => $resultLimit]
-            )
-        );
+        do {
+            $response = $this->connection->listObjects($options + $this->identity);
+
+            if (!array_key_exists('items', $response)) {
+                break;
+            }
+
+            foreach ($response['items'] as $object) {
+                $generation = $includeVersions ? $object['generation'] : null;
+                yield new StorageObject(
+                    $this->connection,
+                    $object['name'],
+                    $this->identity['bucket'],
+                    $generation,
+                    $object
+                );
+            }
+
+            $options['pageToken'] = isset($response['nextPageToken']) ? $response['nextPageToken'] : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -542,17 +469,12 @@ class Bucket
      *     @type string $ifMetagenerationNotMatch Makes the return of the bucket
      *           metadata conditional on whether the bucket's current
      *           metageneration does not match the given value.
-     *     @type string $predefinedAcl Predefined ACL to apply to the bucket.
-     *           Acceptable values include, `"authenticatedRead"`,
-     *           `"bucketOwnerFullControl"`, `"bucketOwnerRead"`, `"private"`,
-     *           `"projectPrivate"`, and `"publicRead"`.
+     *     @type string $predefinedAcl Apply a predefined set of access controls
+     *           to this bucket.
      *     @type string $predefinedDefaultObjectAcl Apply a predefined set of
-     *           default object access controls to this bucket. Acceptable
-     *           values include, `"authenticatedRead"`,
-     *           `"bucketOwnerFullControl"`, `"bucketOwnerRead"`, `"private"`,
-     *           `"projectPrivate"`, and `"publicRead"`.
+     *           default object access controls to this bucket.
      *     @type string $projection Determines which properties to return. May
-     *           be either `"full"` or `"noAcl"`.
+     *           be either 'full' or 'noAcl'.
      *     @type string $fields Selector which will cause the response to only
      *           return the specified fields.
      *     @type array $acl Access controls on the bucket.
@@ -564,11 +486,6 @@ class Bucket
      *     @type array $logging The bucket's logging configuration, which
      *           defines the destination bucket and optional name prefix for the
      *           current bucket's logs.
-     *     @type string $storageClass The bucket's storage class. This defines
-     *           how objects in the bucket are stored and determines the SLA and
-     *           the cost of storage. Acceptable values include
-     *           `"MULTI_REGIONAL"`, `"REGIONAL"`, `"NEARLINE"`, `"COLDLINE"`,
-     *           `"STANDARD"` and `"DURABLE_REDUCED_AVAILABILITY"`.
      *     @type array $versioning The bucket's versioning configuration.
      *     @type array $website The bucket's website configuration.
      * }
@@ -696,7 +613,7 @@ class Bucket
      *           metadata conditional on whether the bucket's current
      *           metageneration does not match the given value.
      *     @type string $projection Determines which properties to return. May
-     *           be either `"full"` or `"noAcl"`.
+     *           be either 'full' or 'noAcl'.
      * }
      * @return array
      */
@@ -731,7 +648,7 @@ class Bucket
      *           metadata conditional on whether the bucket's current
      *           metageneration does not match the given value.
      *     @type string $projection Determines which properties to return. May
-     *           be either `"full"` or `"noAcl"`.
+     *           be either 'full' or 'noAcl'.
      * }
      * @return array
      */
@@ -753,87 +670,5 @@ class Bucket
     public function name()
     {
         return $this->identity['bucket'];
-    }
-
-    /**
-     * Returns whether the bucket with the given file prefix is writable.
-     * Tries to create a temporary file as a resumable upload which will
-     * not be completed (and cleaned up by GCS).
-     *
-     * @param  string $file [optional] File to try to write.
-     * @return bool
-     * @throws ServiceException
-     */
-    public function isWritable($file = null)
-    {
-        $file = $file ?: '__tempfile';
-        $uploader = $this->getResumableUploader(
-            Psr7\stream_for(''),
-            ['name' => $file]
-        );
-        try {
-            $uploader->getResumeUri();
-        } catch (ServiceException $e) {
-            // We expect a 403 access denied error if the bucket is not writable
-            if ($e->getCode() == 403) {
-                return false;
-            }
-            // If not a 403, re-raise the unexpected error
-            throw $e;
-        }
-
-        return true;
-    }
-
-    /**
-     * Manage the IAM policy for the current Bucket.
-     *
-     * Please note that this method may not yet be available in your project.
-     *
-     * Example:
-     * ```
-     * $iam = $bucket->iam();
-     * ```
-     *
-     * @codingStandardsIgnoreStart
-     * @see https://cloud.google.com/storage/docs/access-control/iam-with-json-and-xml Storage Access Control Documentation
-     * @see https://cloud.google.com/storage/docs/json_api/v1/buckets/getIamPolicy Get Bucket IAM Policy
-     * @see https://cloud.google.com/storage/docs/json_api/v1/buckets/setIamPolicy Set Bucket IAM Policy
-     * @see https://cloud.google.com/storage/docs/json_api/v1/buckets/testIamPermissions Test Bucket Permissions
-     * @codingStandardsIgnoreEnd
-     *
-     * @return Iam
-     */
-    public function iam()
-    {
-        if (!$this->iam) {
-            $this->iam = new Iam(
-                new IamBucket($this->connection),
-                $this->identity['bucket'],
-                [
-                    'parent' => null,
-                    'args' => [
-                        'bucket' => $this->identity['bucket']
-                    ]
-                ]
-            );
-        }
-
-        return $this->iam;
-    }
-
-    /*
-     * Determines if an object name is required.
-     *
-     * @param mixed $data
-     * @return bool
-     */
-    private function isObjectNameRequired($data)
-    {
-        if (is_string($data) || is_null($data)) {
-            return true;
-        }
-
-        return false;
     }
 }

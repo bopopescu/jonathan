@@ -6,21 +6,19 @@
 * [Homepage](http://googlecloudplatform.github.io/google-cloud-php)
 * [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs)
 
-This client supports the following Google Cloud Platform services at a [General Availability](#versioning) quality level:
-* [Google Stackdriver Logging](#google-stackdriver-logging-ga) (GA)
-* [Google Cloud Datastore](#google-cloud-datastore-ga) (GA)
-* [Google Cloud Storage](#google-cloud-storage-ga) (GA)
-
 This client supports the following Google Cloud Platform services at a [Beta](#versioning) quality level:
 
 * [Google BigQuery](#google-bigquery-beta) (Beta)
-* [Google Cloud Natural Language](#google-cloud-natural-language-beta) (Beta)
-* [Google Cloud Translation](#google-cloud-translation-beta) (Beta)
-* [Google Cloud Vision](#google-cloud-vision-beta) (Beta)
+* [Google Stackdriver Logging](#google-stackdriver-logging-beta) (Beta)
+* [Google Cloud Datastore](#google-cloud-datastore-beta) (Beta)
+* [Google Cloud Storage](#google-cloud-storage-beta) (Beta)
 
 This client supports the following Google Cloud Platform services at an [Alpha](#versioning) quality level:
+* [Google Cloud Natural Language](#google-cloud-natural-language-alpha) (Alpha)
 * [Google Cloud Pub/Sub](#google-cloud-pubsub-alpha) (Alpha)
 * [Google Cloud Speech](#google-cloud-speech-alpha) (Alpha)
+* [Google Cloud Translation](#google-cloud-translation-alpha) (Alpha)
+* [Google Cloud Vision](#google-cloud-vision-alpha) (Alpha)
 
 If you need support for other Google APIs, please check out the [Google APIs Client Library for PHP](https://github.com/google/google-api-php-client).
 
@@ -30,7 +28,40 @@ If you need support for other Google APIs, please check out the [Google APIs Cli
 $ composer require google/cloud
 ```
 
-## Google Stackdriver Logging (GA)
+## Google BigQuery (Beta)
+
+- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/bigquery/bigqueryclient)
+- [Official Documentation](https://cloud.google.com/bigquery/docs)
+
+#### Preview
+
+```php
+require 'vendor/autoload.php';
+
+use Google\Cloud\BigQuery\BigQueryClient;
+
+$bigQuery = new BigQueryClient([
+	'projectId' => 'my_project'
+]);
+
+// Get an instance of a previously created table.
+$dataset = $bigQuery->dataset('my_dataset');
+$table = $dataset->table('my_table');
+
+// Begin a job to import data from a CSV file into the table.
+$job = $table->load(
+	fopen('/data/my_data.csv', 'r')
+);
+
+// Run a query and inspect the results.
+$queryResults = $bigQuery->runQuery('SELECT * FROM [my_project:my_dataset.my_table]');
+
+foreach ($queryResults->rows() as $row) {
+    print_r($row);
+}
+```
+
+## Google Stackdriver Logging (Beta)
 
 - [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/logging/loggingclient)
 - [Official Documentation](https://cloud.google.com/logging/docs)
@@ -43,7 +74,7 @@ require 'vendor/autoload.php';
 use Google\Cloud\Logging\LoggingClient;
 
 $logging = new LoggingClient([
-    'projectId' => 'my_project'
+	'projectId' => 'my_project'
 ]);
 
 // Get a logger instance.
@@ -54,7 +85,7 @@ $logger->write('my message');
 
 // List log entries from a specific log.
 $entries = $logging->entries([
-    'filter' => 'logName = projects/my_project/logs/my_log'
+	'filter' => 'logName = projects/my_project/logs/my_log'
 ]);
 
 foreach ($entries as $entry) {
@@ -62,15 +93,7 @@ foreach ($entries as $entry) {
 }
 ```
 
-#### google/cloud-logging
-
-Google Stackdriver Logging can be installed separately by requiring the `google/cloud-logging` composer package:
-
-```
-$ require google/cloud-logging
-```
-
-## Google Cloud Datastore (GA)
+## Google Cloud Datastore (Beta)
 
 - [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/datastore/datastoreclient)
 - [Official Documentation](https://cloud.google.com/datastore/docs/)
@@ -101,15 +124,7 @@ $key = $datastore->key('Person', '12345328897844');
 $entity = $datastore->lookup($key);
 ```
 
-#### google/cloud-datastore
-
-Google Cloud Datastore can be installed separately by requiring the `google/cloud-datastore` composer package:
-
-```
-$ require google/cloud-datastore
-```
-
-## Google Cloud Storage (GA)
+## Google Cloud Storage (Beta)
 
 - [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/storage/storageclient)
 - [Official Documentation](https://cloud.google.com/storage/docs)
@@ -137,118 +152,7 @@ $object = $bucket->object('file_backup.txt');
 $object->downloadToFile('/data/file_backup.txt');
 ```
 
-#### Stream Wrapper
-
-```php
-require 'vendor/autoload.php';
-
-use Google\Cloud\Storage\StorageClient;
-
-$storage = new StorageClient([
-    'projectId' => 'my_project'
-]);
-$storage->registerStreamWrapper();
-
-$contents = file_get_contents('gs://my_bucket/file_backup.txt');
-```
-
-#### google/cloud-storage
-
-Google Cloud Storage can be installed separately by requiring the `google/cloud-storage` composer package:
-
-```
-$ require google/cloud-storage
-```
-
-## Google BigQuery (Beta)
-
-- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/bigquery/bigqueryclient)
-- [Official Documentation](https://cloud.google.com/bigquery/docs)
-
-#### Preview
-
-```php
-require 'vendor/autoload.php';
-
-use Google\Cloud\BigQuery\BigQueryClient;
-
-$bigQuery = new BigQueryClient([
-    'projectId' => 'my_project'
-]);
-
-// Get an instance of a previously created table.
-$dataset = $bigQuery->dataset('my_dataset');
-$table = $dataset->table('my_table');
-
-// Begin a job to import data from a CSV file into the table.
-$job = $table->load(
-    fopen('/data/my_data.csv', 'r')
-);
-
-// Run a query and inspect the results.
-$queryResults = $bigQuery->runQuery('SELECT * FROM [my_project:my_dataset.my_table]');
-
-foreach ($queryResults->rows() as $row) {
-    print_r($row);
-}
-```
-
-#### google/cloud-bigquery
-
-Google BigQuery can be installed separately by requiring the `google/cloud-bigquery` composer package:
-
-```
-$ require google/cloud-bigquery
-```
-
-## Google Cloud Natural Language (Beta)
-
-- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/language/languageclient)
-- [Official Documentation](https://cloud.google.com/natural-language/docs)
-
-#### Preview
-
-```php
-require 'vendor/autoload.php';
-
-use Google\Cloud\Language\LanguageClient;
-
-$language = new LanguageClient([
-    'projectId' => 'my_project'
-]);
-
-// Analyze a sentence.
-$annotation = $language->annotateText('Greetings from Michigan!');
-
-// Check the sentiment.
-if ($annotation->sentiment() > 0) {
-    echo "This is a positive message.\n";
-}
-
-// Detect entities.
-$entities = $annotation->entitiesByType('LOCATION');
-
-foreach ($entities as $entity) {
-    echo $entity['name'] . "\n";
-}
-
-// Parse the syntax.
-$tokens = $annotation->tokensByTag('NOUN');
-
-foreach ($tokens as $token) {
-    echo $token['text']['content'] . "\n";
-}
-```
-
-#### google/cloud-language
-
-Google Cloud Natural Language can be installed separately by requiring the `google/cloud-language` composer package:
-
-```
-$ require google/cloud-language
-```
-
-## Google Cloud Translation (Beta)
+## Google Cloud Translation (Alpha)
 
 - [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/translate/translateclient)
 - [Official Documentation](https://cloud.google.com/translation/docs)
@@ -294,15 +198,112 @@ foreach ($languages as $language) {
 }
 ```
 
-#### google/cloud-translate
+## Google Cloud Natural Language (Alpha)
 
-Google Cloud Translation can be installed separately by requiring the `google/cloud-translate` composer package:
+- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/naturallanguage/naturallanguageclient)
+- [Official Documentation](https://cloud.google.com/natural-language/docs)
 
+#### Preview
+
+```php
+require 'vendor/autoload.php';
+
+use Google\Cloud\NaturalLanguage\NaturalLanguageClient;
+
+$language = new NaturalLanguageClient([
+    'projectId' => 'my_project'
+]);
+
+// Analyze a sentence.
+$annotation = $language->annotateText('Greetings from Michigan!');
+
+// Check the sentiment.
+if ($annotation->sentiment() > 0) {
+    echo "This is a positive message.\n";
+}
+
+// Detect entities.
+$entities = $annotation->entitiesByType('LOCATION');
+
+foreach ($entities as $entity) {
+    echo $entity['name'] . "\n";
+}
+
+// Parse the syntax.
+$tokens = $annotation->tokensByTag('NOUN');
+
+foreach ($tokens as $token) {
+    echo $token['text']['content'] . "\n";
+}
 ```
-$ require google/cloud-translate
+
+## Google Cloud Pub/Sub (Alpha)
+
+- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/pubsub/pubsubclient)
+- [Official Documentation](https://cloud.google.com/pubsub/docs)
+
+#### Preview
+
+```php
+require 'vendor/autoload.php';
+
+use Google\Cloud\PubSub\PubSubClient;
+
+$pubSub = new PubSubClient([
+    'projectId' => 'my_project'
+]);
+
+// Get an instance of a previously created topic.
+$topic = $pubSub->topic('my_topic');
+
+// Publish a message to the topic.
+$topic->publish([
+	'data' => 'My new message.',
+	'attributes' => [
+		'location' => 'Detroit'
+	]
+]);
+
+// Get an instance of a previously created subscription.
+$subscription = $pubSub->subscription('my_subscription');
+
+// Pull all available messages.
+$messages = $subscription->pull();
+
+foreach ($messages as $message) {
+    echo $message->data() . "\n";
+    echo $message->attribute('location');
+}
 ```
 
-## Google Cloud Vision (Beta)
+## Google Cloud Speech (Alpha)
+
+- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/speech/speechclient)
+- [Official Documentation](https://cloud.google.com/speech/docs)
+
+#### Preview
+
+```php
+require 'vendor/autoload.php';
+
+use Google\Cloud\Speech\SpeechClient;
+
+$speech = new SpeechClient([
+    'projectId' => 'my_project'
+]);
+
+// Recognize the speech in an audio file.
+$results = $speech->recognize(
+    fopen('/data/audio_sample.flac', 'r')
+);
+
+foreach ($results as $result) {
+    echo $result['transcript'] . "\n";
+    echo $result['confidence'] . "\n";
+}
+```
+
+## Google Cloud Vision (Alpha)
 
 - [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/vision/visionclient)
 - [Official Documentation](https://cloud.google.com/vision/docs)
@@ -334,96 +335,6 @@ foreach ($annotation->faces() as $key => $face) {
 }
 ```
 
-#### google/cloud-vision
-
-Google Cloud Vision can be installed separately by requiring the `google/cloud-vision` composer package:
-
-```
-$ require google/cloud-vision
-```
-
-## Google Cloud Pub/Sub (Alpha)
-
-- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/pubsub/pubsubclient)
-- [Official Documentation](https://cloud.google.com/pubsub/docs)
-
-#### Preview
-
-```php
-require 'vendor/autoload.php';
-
-use Google\Cloud\PubSub\PubSubClient;
-
-$pubSub = new PubSubClient([
-    'projectId' => 'my_project'
-]);
-
-// Get an instance of a previously created topic.
-$topic = $pubSub->topic('my_topic');
-
-// Publish a message to the topic.
-$topic->publish([
-    'data' => 'My new message.',
-    'attributes' => [
-        'location' => 'Detroit'
-    ]
-]);
-
-// Get an instance of a previously created subscription.
-$subscription = $pubSub->subscription('my_subscription');
-
-// Pull all available messages.
-$messages = $subscription->pull();
-
-foreach ($messages as $message) {
-    echo $message->data() . "\n";
-    echo $message->attribute('location');
-}
-```
-
-#### google/cloud-pubsub
-
-Google Cloud Pub/Sub can be installed separately by requiring the `google/cloud-pubsub` composer package:
-
-```
-$ require google/cloud-pubsub
-```
-
-## Google Cloud Speech (Alpha)
-
-- [API Documentation](http://googlecloudplatform.github.io/google-cloud-php/#/docs/latest/speech/speechclient)
-- [Official Documentation](https://cloud.google.com/speech/docs)
-
-#### Preview
-
-```php
-require 'vendor/autoload.php';
-
-use Google\Cloud\Speech\SpeechClient;
-
-$speech = new SpeechClient([
-    'projectId' => 'my_project',
-    'languageCode' => 'en-US'
-]);
-
-// Recognize the speech in an audio file.
-$results = $speech->recognize(
-    fopen(__DIR__ . '/audio_sample.flac', 'r')
-);
-
-foreach ($results as $result) {
-    echo $result['transcript'] . "\n";
-}
-```
-
-#### google/cloud-speech
-
-Google Cloud Speech can be installed separately by requiring the `google/cloud-speech` composer package:
-
-```
-$ require google/cloud-speech
-```
-
 ## Caching Access Tokens
 
 By default the library will use a simple in-memory caching implementation, however it is possible to override this behavior by passing a [PSR-6](http://www.php-fig.org/psr/psr-6/) caching implementation in to the desired client.
@@ -448,19 +359,11 @@ $storage = new StorageClient([
 
 This library follows [Semantic Versioning](http://semver.org/).
 
-Please note it is currently under active development. Any release versioned
-0.x.y is subject to backwards incompatible changes at any time.
+Please note it is currently under active development. Any release versioned 0.x.y is subject to backwards incompatible changes at any time.
 
-**GA**: Libraries defined at a GA quality level are stable, and will not
-introduce backwards-incompatible changes in any minor or patch releases. We will
-address issues and requests with the highest priority.
+**Beta**: Libraries defined at a Beta quality level are expected to be mostly stable and we're working towards their release candidate. We will address issues and requests with a higher priority.
 
-**Beta**: Libraries defined at a Beta quality level are expected to be mostly
-stable and we're working towards their release candidate. We will address issues
-and requests with a higher priority.
-
-**Alpha**: Libraries defined at an Alpha quality level are still a
-work-in-progress and are more likely to get backwards-incompatible updates.
+**Alpha**: Libraries defined at an Alpha quality level are still a work-in-progress and are more likely to get backwards-incompatible updates.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2017, Google Inc. All rights reserved.
+ * Copyright 2016, Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ class LoggingServiceV2Client
     /**
      * The code generator version, to be included in the agent header.
      */
-    const CODEGEN_VERSION = '0.0.5';
+    const CODEGEN_VERSION = '0.1.0';
 
     private static $projectNameTemplate;
     private static $logNameTemplate;
@@ -207,17 +207,6 @@ class LoggingServiceV2Client
         return $pageStreamingDescriptors;
     }
 
-    private static function getGapicVersion()
-    {
-        if (file_exists(__DIR__.'/../VERSION')) {
-            return trim(file_get_contents(__DIR__.'/../VERSION'));
-        } elseif (class_exists('\Google\Cloud\ServiceBuilder')) {
-            return \Google\Cloud\ServiceBuilder::VERSION;
-        } else {
-            return;
-        }
-    }
-
     // TODO(garrettjones): add channel (when supported in gRPC)
     /**
      * Constructor.
@@ -243,6 +232,9 @@ class LoggingServiceV2Client
      *                              that don't use retries. For calls that use retries,
      *                              set the timeout in RetryOptions.
      *                              Default: 30000 (30 seconds)
+     *     @type string $appName The codename of the calling service. Default 'gax'.
+     *     @type string $appVersion The version of the calling service.
+     *                              Default: the current version of GAX.
      *     @type \Google\Auth\CredentialsLoader $credentialsLoader
      *                              A CredentialsLoader object created using the
      *                              Google\Auth library.
@@ -262,17 +254,18 @@ class LoggingServiceV2Client
             ],
             'retryingOverride' => null,
             'timeoutMillis' => self::DEFAULT_TIMEOUT_MILLIS,
-            'libName' => null,
-            'libVersion' => null,
+            'appName' => 'gax',
+            'appVersion' => AgentHeaderDescriptor::getGaxVersion(),
         ];
         $options = array_merge($defaultOptions, $options);
 
-        $gapicVersion = $options['libVersion'] ?: self::getGapicVersion();
-
         $headerDescriptor = new AgentHeaderDescriptor([
-            'libName' => $options['libName'],
-            'libVersion' => $options['libVersion'],
-            'gapicVersion' => $gapicVersion,
+            'clientName' => $options['appName'],
+            'clientVersion' => $options['appVersion'],
+            'codeGenName' => self::CODEGEN_NAME,
+            'codeGenVersion' => self::CODEGEN_VERSION,
+            'gaxVersion' => AgentHeaderDescriptor::getGaxVersion(),
+            'phpVersion' => phpversion(),
         ]);
 
         $defaultDescriptors = ['headerDescriptor' => $headerDescriptor];
@@ -402,7 +395,7 @@ class LoggingServiceV2Client
      *                            fields.
      *
      * To improve throughput and to avoid exceeding the
-     * [quota limit](https://cloud.google.com/logging/quota-policy) for calls to `entries.write`,
+     * [quota limit](/logging/quota-policy) for calls to `entries.write`,
      * you should write multiple log entries at once rather than
      * calling this method for each individual log entry.
      * @param array $optionalArgs {
@@ -492,7 +485,7 @@ class LoggingServiceV2Client
     /**
      * Lists log entries.  Use this method to retrieve log entries from
      * Stackdriver Logging.  For ways to export log entries, see
-     * [Exporting Logs](https://cloud.google.com/logging/docs/export).
+     * [Exporting Logs](/logging/docs/export).
      *
      * Sample code:
      * ```
@@ -535,7 +528,7 @@ class LoggingServiceV2Client
      *          `resource_names`.
      *     @type string $filter
      *          Optional. A filter that chooses which log entries to return.  See [Advanced
-     *          Logs Filters](https://cloud.google.com/logging/docs/view/advanced_filters).  Only log entries that
+     *          Logs Filters](/logging/docs/view/advanced_filters).  Only log entries that
      *          match the filter are returned.  An empty filter matches all log entries in
      *          the resources listed in `resource_names`. Referencing a parent resource
      *          that is not listed in `resource_names` will cause the filter to return no

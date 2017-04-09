@@ -30,7 +30,6 @@ use Google\Cloud\Datastore\Query\Query;
 use Google\Cloud\Datastore\Query\QueryInterface;
 use Google\Cloud\Datastore\Transaction;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
-use Google\Cloud\Core\Int64;
 use Prophecy\Argument;
 
 /**
@@ -68,9 +67,17 @@ class DatastoreClientTest extends SnippetTestCase
         $this->assertInstanceOf(DatastoreClient::class, $res->returnVal());
     }
 
-    public function testMultiTenant()
+    public function testClassDirectInstantiation()
     {
         $snippet = $this->snippetFromClass(DatastoreClient::class, 1);
+        $res = $snippet->invoke('datastore');
+
+        $this->assertInstanceOf(DatastoreClient::class, $res->returnVal());
+    }
+
+    public function testMultiTenant()
+    {
+        $snippet = $this->snippetFromClass(DatastoreClient::class, 2);
         $res = $snippet->invoke('datastore');
 
         $this->assertInstanceOf(DatastoreClient::class, $res->returnVal());
@@ -92,7 +99,7 @@ class DatastoreClientTest extends SnippetTestCase
 
     public function testEmulator()
     {
-        $snippet = $this->snippetFromClass(DatastoreClient::class, 2);
+        $snippet = $this->snippetFromClass(DatastoreClient::class, 3);
         $res = $snippet->invoke('datastore');
 
         $this->assertInstanceOf(DatastoreClient::class, $res->returnVal());
@@ -226,24 +233,6 @@ class DatastoreClientTest extends SnippetTestCase
     public function testBlob()
     {
         $snippet = $this->snippetFromMethod(DatastoreClient::class, 'blob');
-        $snippet->addLocal('datastore', $this->client);
-
-        $res = $snippet->invoke('blob');
-        $this->assertInstanceOf(Blob::class, $res->returnVal());
-    }
-
-    public function testInt64()
-    {
-        $snippet = $this->snippetFromMethod(DatastoreClient::class, 'int64');
-        $snippet->addLocal('datastore', $this->client);
-
-        $res = $snippet->invoke('int64');
-        $this->assertInstanceOf(Int64::class, $res->returnVal());
-    }
-
-    public function testBlobWithFile()
-    {
-        $snippet = $this->snippetFromMethod(DatastoreClient::class, 'blob', 1);
         $snippet->addLocal('datastore', $this->client);
         $snippet->replace("file_get_contents(__DIR__ .'/family-photo.jpg')", "''");
 

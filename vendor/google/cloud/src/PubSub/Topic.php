@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2016 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,8 @@
 
 namespace Google\Cloud\PubSub;
 
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\Exception\NotFoundException;
-use Google\Cloud\Core\Iam\Iam;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
+use Google\Cloud\Iam\Iam;
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\PubSub\Connection\ConnectionInterface;
 use Google\Cloud\PubSub\Connection\IamTopic;
 use InvalidArgumentException;
@@ -31,9 +28,11 @@ use InvalidArgumentException;
  *
  * Example:
  * ```
- * use Google\Cloud\PubSub\PubSubClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $pubsub = new PubSubClient();
+ * $client = new ServiceBuilder();
+ *
+ * $pubsub = $client->pubsub();
  * $topic = $pubsub->topic('my-new-topic');
  * ```
  *
@@ -44,7 +43,6 @@ use InvalidArgumentException;
  */
 class Topic
 {
-    use ArrayTrait;
     use ResourceNameTrait;
 
     /**
@@ -92,7 +90,7 @@ class Topic
         $projectId,
         $name,
         $encode,
-        array $info = []
+        array $info = null
     ) {
         $this->connection = $connection;
         $this->projectId = $projectId;
@@ -105,6 +103,9 @@ class Topic
         } else {
             $this->name = $this->formatName('topic', $name, $projectId);
         }
+
+        $iamConnection = new IamTopic($this->connection);
+        $this->iam = new Iam($iamConnection, $this->name);
     }
 
     /**
@@ -393,30 +394,27 @@ class Topic
      *     Configuration Options
      *
      *     @type int $pageSize Maximum number of subscriptions to return.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
      * }
-     * @return ItemIterator<Google\Cloud\PubSub\Subscription>
+     * @return \Generator<Google\Cloud\PubSub\Subscription>
      */
     public function subscriptions(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
 
-        return new ItemIterator(
-            new PageIterator(
-                function ($subscription) {
-                    return $this->subscriptionFactory($subscription);
-                },
-                [$this->connection, 'listSubscriptionsByTopic'],
-                $options + ['topic' => $this->name],
-                [
-                    'itemsKey' => 'subscriptions',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+        do {
+            $response = $this->connection->listSubscriptionsByTopic($options + [
+                'topic' => $this->name
+            ]);
+
+            foreach ($response['subscriptions'] as $subscription) {
+                yield $this->subscriptionFactory($subscription);
+            }
+
+            // If there's a page token, we'll request the next page.
+            $options['pageToken'] = isset($response['nextPageToken'])
+                ? $response['nextPageToken']
+                : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -438,11 +436,6 @@ class Topic
      */
     public function iam()
     {
-        if (!$this->iam) {
-            $iamConnection = new IamTopic($this->connection);
-            $this->iam = new Iam($iamConnection, $this->name);
-        }
-
         return $this->iam;
     }
 

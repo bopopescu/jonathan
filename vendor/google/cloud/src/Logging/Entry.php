@@ -24,9 +24,10 @@ use Google\Cloud\Logging\Connection\ConnectionInterface;
  *
  * Example:
  * ```
- * use Google\Cloud\Logging\LoggingClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $logging = new LoggingClient();
+ * $cloud = new ServiceBuilder();
+ * $logging = $cloud->logging();
  *
  * $logger = $logging->logger('my-log');
  *
@@ -57,7 +58,9 @@ class Entry
      * echo $info['textPayload'];
      * ```
      *
-     * @see https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry LogEntry resource documentation.
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/LogEntry LogEntry resource documentation.
+     * @codingStandardsIgnoreEnd
      *
      * @return array
      */

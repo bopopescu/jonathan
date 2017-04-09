@@ -17,7 +17,7 @@
 
 namespace Google\Cloud\Speech;
 
-use Google\Cloud\Core\Exception\NotFoundException;
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\Speech\Connection\ConnectionInterface;
 
 /**
@@ -25,14 +25,14 @@ use Google\Cloud\Speech\Connection\ConnectionInterface;
  *
  * Example:
  * ```
- * use Google\Cloud\Speech\SpeechClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $speech = new SpeechClient([
- *     'languageCode' => 'en-US'
- * ]);
+ * $cloud = new ServiceBuilder();
+ * $speech = $cloud->speech();
  *
+ * $audioFileStream = fopen(__DIR__  . '/audio.flac', 'r');
  * $operation = $speech->beginRecognizeOperation(
- *     fopen(__DIR__  . '/audio.flac', 'r')
+ *     $audioFileStream
  * );
  * ```
  */
@@ -99,7 +99,7 @@ class Operation
      * ```
      *
      * @codingStandardsIgnoreStart
-     * @see https://cloud.google.com/speech/reference/rest/v1/speech/recognize#SpeechRecognitionAlternative SpeechRecognitionAlternative
+     * @see https://cloud.google.com/speech/reference/rest/v1beta1/speech/syncrecognize#SpeechRecognitionAlternative SpeechRecognitionAlternative
      * @codingStandardsIgnoreEnd
      *
      * @param array $options [optional] Configuration Options.
@@ -153,8 +153,8 @@ class Operation
      * ```
      *
      * @codingStandardsIgnoreStart
-     * @see https://cloud.google.com/speech/reference/rest/v1/operations/get Operations get API documentation.
-     * @see https://cloud.google.com/speech/reference/rest/v1/operations#Operation Operation resource documentation.
+     * @see https://cloud.google.com/speech/reference/rest/v1beta1/operations/get Operations get API documentation.
+     * @see https://cloud.google.com/speech/reference/rest/v1beta1/operations#Operation Operation resource documentation.
      * @codingStandardsIgnoreEnd
      *
      * @param array $options [optional] Configuration Options.
@@ -180,8 +180,8 @@ class Operation
      * ```
      *
      * @codingStandardsIgnoreStart
-     * @see https://cloud.google.com/speech/reference/rest/v1/operations/get Operations get API documentation.
-     * @see https://cloud.google.com/speech/reference/rest/v1/operations#Operation Operation resource documentation.
+     * @see https://cloud.google.com/speech/reference/rest/v1beta1/operations/get Operations get API documentation.
+     * @see https://cloud.google.com/speech/reference/rest/v1beta1/operations#Operation Operation resource documentation.
      * @codingStandardsIgnoreEnd
      *
      * @param array $options [optional] Configuration Options.

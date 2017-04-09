@@ -17,7 +17,7 @@
 
 namespace Google\Cloud\Vision\Annotation;
 
-use Google\Cloud\Core\CallTrait;
+use Google\Cloud\CallTrait;
 
 /**
  * Represents an entity annotation. Entities are created by several
@@ -26,11 +26,12 @@ use Google\Cloud\Core\CallTrait;
  *
  * Example:
  * ```
- * use Google\Cloud\Vision\VisionClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $vision = new VisionClient();
+ * $cloud = new ServiceBuilder();
+ * $vision = $cloud->vision();
  *
- * $imageResource = fopen(__DIR__ . '/assets/family-photo.jpg', 'r');
+ * $imageResource = fopen(__DIR__ .'/assets/family-photo.jpg', 'r');
  * $image = $vision->image($imageResource, [ 'text' ]);
  * $annotation = $vision->annotate($image);
  *

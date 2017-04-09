@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Tests\Unit\Storage;
+namespace Google\Cloud\Tests\Storage;
 
 use Google\Cloud\Storage\Acl;
 use Prophecy\Argument;

@@ -42,7 +42,7 @@ class PublishAndPullTest extends PubSubTestCase
         ];
         $topic->publish($message);
 
-        $messages = $sub->pull();
+        $messages = iterator_to_array($sub->pull());
         $sub->modifyAckDeadline($messages[0], 15);
         $sub->acknowledge($messages[0]);
 
@@ -79,7 +79,7 @@ class PublishAndPullTest extends PubSubTestCase
 
         $topic->publishBatch($messages);
 
-        $actualMessages = $sub->pull();
+        $actualMessages = iterator_to_array($sub->pull());
         $sub->modifyAckDeadlineBatch($actualMessages, 15);
         $sub->acknowledgeBatch($actualMessages);
 

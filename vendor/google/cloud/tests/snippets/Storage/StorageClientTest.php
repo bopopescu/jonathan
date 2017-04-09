@@ -21,7 +21,6 @@ use Google\Cloud\Dev\Snippet\SnippetTestCase;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\Connection\ConnectionInterface;
 use Google\Cloud\Storage\StorageClient;
-use Google\Cloud\Core\Iterator\ItemIterator;
 use Prophecy\Argument;
 
 /**
@@ -44,6 +43,13 @@ class StorageClientTest extends SnippetTestCase
     public function testClass()
     {
         $snippet = $this->snippetFromClass(StorageClient::class);
+        $res = $snippet->invoke('storage');
+        $this->assertInstanceOf(StorageClient::class, $res->returnVal());
+    }
+
+    public function testClassDirectInstantiation()
+    {
+        $snippet = $this->snippetFromClass(StorageClient::class, 1);
         $res = $snippet->invoke('storage');
         $this->assertInstanceOf(StorageClient::class, $res->returnVal());
     }
@@ -74,7 +80,7 @@ class StorageClientTest extends SnippetTestCase
         $this->client->setConnection($this->connection->reveal());
 
         $res = $snippet->invoke('buckets');
-        $this->assertInstanceOf(ItemIterator::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
 
         $buckets = iterator_to_array($res->returnVal());
         $this->assertEquals('album 1', $buckets[0]->name());
@@ -98,7 +104,7 @@ class StorageClientTest extends SnippetTestCase
         $this->client->setConnection($this->connection->reveal());
 
         $res = $snippet->invoke('buckets');
-        $this->assertInstanceOf(ItemIterator::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
         $this->assertEquals('album 1', explode("\n", $res->output())[0]);
         $this->assertEquals('album 2', explode("\n", $res->output())[1]);
     }
@@ -106,21 +112,6 @@ class StorageClientTest extends SnippetTestCase
     public function testCreateBucket()
     {
         $snippet = $this->snippetFromMethod(StorageClient::class, 'createBucket');
-        $snippet->addLocal('storage', $this->client);
-
-        $this->connection->insertBucket(Argument::any())
-            ->shouldBeCalled()
-            ->willReturn([]);
-
-        $this->client->setConnection($this->connection->reveal());
-
-        $res = $snippet->invoke('bucket');
-        $this->assertInstanceOf(Bucket::class, $res->returnVal());
-    }
-
-    public function testCreateBucketWithLogging()
-    {
-        $snippet = $this->snippetFromMethod(StorageClient::class, 'createBucket', 1);
         $snippet->addLocal('storage', $this->client);
 
         $this->connection->insertBucket(Argument::any())

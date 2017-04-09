@@ -18,25 +18,20 @@
 namespace Google\Cloud\BigQuery;
 
 use Google\Cloud\BigQuery\Connection\ConnectionInterface;
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\Exception\NotFoundException;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\Storage\StorageObject;
-use Psr\Http\Message\StreamInterface;
 
 /**
- * [Tables](https://cloud.google.com/bigquery/docs/tables) are a standard
- * two-dimensional table with individual records organized in rows, and a data
- * type assigned to each column (also called a field).
+ * [BigQuery Tables](https://cloud.google.com/bigquery/docs/tables) are a
+ * standard two-dimensional table with individual records organized in rows, and
+ * a data type assigned to each column (also called a field).
  */
 class Table
 {
-    use ArrayTrait;
     use JobConfigurationTrait;
 
     /**
-     * @var ConnectionInterface Represents a connection to BigQuery.
+     * @var ConnectionInterface $connection Represents a connection to BigQuery.
      */
     protected $connection;
 
@@ -51,30 +46,17 @@ class Table
     private $info;
 
     /**
-     * @var ValueMapper Maps values between PHP and BigQuery.
-     */
-    private $mapper;
-
-    /**
      * @param ConnectionInterface $connection Represents a connection to
      *        BigQuery.
      * @param string $id The table's id.
      * @param string $datasetId The dataset's id.
      * @param string $projectId The project's id.
-     * @param ValueMapper $mapper Maps values between PHP and BigQuery.
      * @param array $info [optional] The table's metadata.
      */
-    public function __construct(
-        ConnectionInterface $connection,
-        $id,
-        $datasetId,
-        $projectId,
-        ValueMapper $mapper,
-        array $info = []
-    ) {
+    public function __construct(ConnectionInterface $connection, $id, $datasetId, $projectId, array $info = [])
+    {
         $this->connection = $connection;
         $this->info = $info;
-        $this->mapper = $mapper;
         $this->identity = [
             'tableId' => $id,
             'datasetId' => $datasetId,
@@ -88,7 +70,7 @@ class Table
      * Example:
      * ```
      * if ($table->exists()) {
-     *     echo 'Table exists!';
+     *     echo "Table exists!";
      * }
      * ```
      *
@@ -155,7 +137,7 @@ class Table
      * $rows = $table->rows();
      *
      * foreach ($rows as $row) {
-     *     echo $row['name'] . PHP_EOL;
+     *     echo $row['name'];
      * }
      * ```
      *
@@ -164,49 +146,35 @@ class Table
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type int $maxResults Maximum number of results to return per page.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
+     *     @type int $maxResults Maximum number of results to return.
      *     @type int $startIndex Zero-based index of the starting row.
      * }
-     * @return ItemIterator<array>
-     * @throws GoogleException
+     * @return \Generator<array>
      */
     public function rows(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
         $schema = $this->info()['schema']['fields'];
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $row) use ($schema) {
-                    $mergedRow = [];
+        do {
+            $response = $this->connection->listTableData($options + $this->identity);
 
-                    if ($row === null) {
-                        return $mergedRow;
-                    }
+            if (!isset($response['rows'])) {
+                return;
+            }
 
-                    if (!array_key_exists('f', $row)) {
-                        throw new GoogleException('Bad response - missing key "f" for a row.');
-                    }
+            foreach ($response['rows'] as $rows) {
+                $row = [];
 
-                    foreach ($row['f'] as $key => $value) {
-                        $fieldSchema = $schema[$key];
-                        $mergedRow[$fieldSchema['name']] = $this->mapper->fromBigQuery($value, $fieldSchema);
-                    }
+                foreach ($rows['f'] as $key => $field) {
+                    $row[$schema[$key]['name']] = $field['v'];
+                }
 
-                    return $mergedRow;
-                },
-                [$this->connection, 'listTableData'],
-                $options + $this->identity,
-                [
-                    'itemsKey' => 'rows',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+                yield $row;
+            }
+
+            $options['pageToken'] = isset($response['nextPageToken']) ? $response['nextPageToken'] : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -246,13 +214,7 @@ class Table
 
         $response = $this->connection->insertJob($config);
 
-        return new Job(
-            $this->connection,
-            $response['jobReference']['jobId'],
-            $this->identity['projectId'],
-            $this->mapper,
-            $response
-        );
+        return new Job($this->connection, $response['jobReference']['jobId'], $this->identity['projectId'], $response);
     }
 
     /**
@@ -267,10 +229,7 @@ class Table
      *
      * @see https://cloud.google.com/bigquery/docs/reference/v2/jobs Jobs insert API Documentation.
      *
-     * @param string|StorageObject $destination The destination object. May be
-     *        a {@see Google\Cloud\Storage\StorageObject} or a URI pointing to
-     *        a Google Cloud Storage object in the format of
-     *        `gs://{bucket-name}/{object-name}`.
+     * @param StorageObject $destination The destination object.
      * @param array $options [optional] {
      *     Configuration options.
      *
@@ -280,31 +239,22 @@ class Table
      * }
      * @return Job
      */
-    public function export($destination, array $options = [])
+    public function export(StorageObject $destination, array $options = [])
     {
-        if ($destination instanceof StorageObject) {
-            $destination = $destination->gcsUri();
-        }
-
+        $objIdentity = $destination->identity();
         $config = $this->buildJobConfig(
             'extract',
             $this->identity['projectId'],
             [
                 'sourceTable' => $this->identity,
-                'destinationUris' => [$destination]
+                'destinationUris' => ['gs://' . $objIdentity['bucket'] . '/' . $objIdentity['object']]
             ],
             $options
         );
 
         $response = $this->connection->insertJob($config);
 
-        return new Job(
-            $this->connection,
-            $response['jobReference']['jobId'],
-            $this->identity['projectId'],
-            $this->mapper,
-            $response
-        );
+        return new Job($this->connection, $response['jobReference']['jobId'], $this->identity['projectId'], $response);
     }
 
     /**
@@ -348,7 +298,6 @@ class Table
             $this->connection,
             $response['jobReference']['jobId'],
             $this->identity['projectId'],
-            $this->mapper,
             $response
         );
     }
@@ -365,10 +314,7 @@ class Table
      *
      * @see https://cloud.google.com/bigquery/docs/reference/v2/jobs Jobs insert API Documentation.
      *
-     * @param string|StorageObject $object The object to load data from. May be
-     *        a {@see Google\Cloud\Storage\StorageObject} or a URI pointing to a
-     *        Google Cloud Storage object in the format of
-     *        `gs://{bucket-name}/{object-name}`.
+     * @param StorageObject $destination The object to load data from.
      * @param array $options [optional] {
      *     Configuration options.
      *
@@ -378,13 +324,10 @@ class Table
      * }
      * @return Job
      */
-    public function loadFromStorage($object, array $options = [])
+    public function loadFromStorage(StorageObject $object, array $options = [])
     {
-        if ($object instanceof StorageObject) {
-            $object = $object->gcsUri();
-        }
-
-        $options['jobConfig']['sourceUris'] = [$object];
+        $objIdentity = $object->identity();
+        $options['jobConfig']['sourceUris'] = ['gs://' . $objIdentity['bucket'] . '/' . $objIdentity['object']];
 
         return $this->load(null, $options);
     }
@@ -515,10 +458,6 @@ class Table
         foreach ($rows as $row) {
             if (!isset($row['data'])) {
                 throw new \InvalidArgumentException('A row must have a data key.');
-            }
-
-            foreach ($row['data'] as $key => $item) {
-                $row['data'][$key] = $this->mapper->toBigQuery($item);
             }
 
             $row['json'] = $row['data'];

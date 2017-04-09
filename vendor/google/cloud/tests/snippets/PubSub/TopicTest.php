@@ -18,11 +18,10 @@
 namespace Google\Cloud\Tests\Snippets\PubSub;
 
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
-use Google\Cloud\Core\Iam\Iam;
+use Google\Cloud\Iam\Iam;
 use Google\Cloud\PubSub\Connection\ConnectionInterface;
 use Google\Cloud\PubSub\Subscription;
 use Google\Cloud\PubSub\Topic;
-use Google\Cloud\Core\Iterator\ItemIterator;
 use Prophecy\Argument;
 
 /**
@@ -221,11 +220,11 @@ class TopicTest extends SnippetTestCase
         $this->topic->setConnection($this->connection->reveal());
 
         $res = $snippet->invoke('subscriptions');
-        $this->assertInstanceOf(ItemIterator::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
         $this->assertEquals(self::SUBSCRIPTION, $res->output());
     }
 
-    public function testIam()
+    public function iam()
     {
         $snippet = $this->snippetFromMethod(Topic::class, 'iam');
         $snippet->addLocal('topic', $this->topic);

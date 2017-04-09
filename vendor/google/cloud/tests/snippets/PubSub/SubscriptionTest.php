@@ -19,9 +19,8 @@ namespace Google\Cloud\Tests\Snippets\PubSub;
 
 use Google\Cloud\Dev\SetStubConnectionTrait;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
-use Google\Cloud\Core\Iam\Iam;
+use Google\Cloud\Iam\Iam;
 use Google\Cloud\PubSub\Connection\ConnectionInterface;
-use Google\Cloud\PubSub\Message;
 use Google\Cloud\PubSub\PubSubClient;
 use Google\Cloud\PubSub\Subscription;
 use Prophecy\Argument;
@@ -93,19 +92,6 @@ class SubscriptionTest extends SnippetTestCase
 
         $res = $snippet->invoke('result');
         $this->assertEquals($return, $res->returnVal());
-    }
-
-    public function testUpdate()
-    {
-        $snippet = $this->snippetFromMethod(Subscription::class, 'update');
-        $snippet->addLocal('subscription', $this->subscription);
-
-        $this->connection->updateSubscription(Argument::any())
-            ->shouldBeCalled();
-
-        $this->subscription->setConnection($this->connection->reveal());
-
-        $snippet->invoke();
     }
 
     public function testDelete()
@@ -183,7 +169,7 @@ class SubscriptionTest extends SnippetTestCase
         $this->subscription->setConnection($this->connection->reveal());
 
         $res = $snippet->invoke('messages');
-        $this->assertContainsOnlyInstancesOf(Message::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
         $this->assertEquals('hello world', $res->output());
     }
 
@@ -255,7 +241,7 @@ class SubscriptionTest extends SnippetTestCase
 
     public function testModifyAckDeadlineBatch()
     {
-        $snippet = $this->snippetFromMethod(Subscription::class, 'modifyAckDeadlineBatch');
+        $snippet = $this->snippetFromMethod(Subscription::class, 'modifyAckDeadline');
         $snippet->addLocal('subscription', $this->subscription);
 
         $this->connection->pull(Argument::any())
@@ -288,32 +274,6 @@ class SubscriptionTest extends SnippetTestCase
         $this->subscription->setConnection($this->connection->reveal());
 
         $res = $snippet->invoke();
-    }
-
-    public function testSeekToTime()
-    {
-        $snippet = $this->snippetFromMethod(Subscription::class, 'seekToTime');
-        $snippet->addLocal('pubsub', $this->pubsub);
-        $snippet->addLocal('subscription', $this->subscription);
-
-        $this->connection->seek(Argument::any())
-            ->shouldBeCalled();
-
-        $this->subscription->setConnection($this->connection->reveal());
-        $snippet->invoke();
-    }
-
-    public function testSeekToSnapshot()
-    {
-        $snippet = $this->snippetFromMethod(Subscription::class, 'seekToSnapshot');
-        $snippet->addLocal('pubsub', $this->pubsub);
-        $snippet->addLocal('subscription', $this->subscription);
-
-        $this->connection->seek(Argument::any())
-            ->shouldBeCalled();
-
-        $this->subscription->setConnection($this->connection->reveal());
-        $snippet->invoke();
     }
 
     public function testIam()

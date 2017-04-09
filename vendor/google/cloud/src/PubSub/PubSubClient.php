@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2016 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,15 @@
 
 namespace Google\Cloud\PubSub;
 
-use Google\Cloud\Core\ArrayTrait;
-use Google\Cloud\Core\ClientTrait;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
+use Google\Cloud\ClientTrait;
 use Google\Cloud\PubSub\Connection\Grpc;
 use Google\Cloud\PubSub\Connection\Rest;
 use InvalidArgumentException;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
- * Google Cloud Pub/Sub allows you to send and receive
- * messages between independent applications. Find more information at the
+ * Google Cloud Pub/Sub client. Allows you to send and receive
+ * messages between independent applications. Find more information at
  * [Google Cloud Pub/Sub docs](https://cloud.google.com/pubsub/docs/).
  *
  * To enable the [Google Cloud Pub/Sub Emulator](https://cloud.google.com/pubsub/emulator),
@@ -60,6 +57,15 @@ use Psr\Cache\CacheItemPoolInterface;
  *
  * Example:
  * ```
+ * use Google\Cloud\ServiceBuilder;
+ *
+ * $cloud = new ServiceBuilder();
+ *
+ * $pubsub = $cloud->pubsub();
+ * ```
+ *
+ * ```
+ * // PubSubClient can be instantiated directly.
  * use Google\Cloud\PubSub\PubSubClient;
  *
  * $pubsub = new PubSubClient();
@@ -67,23 +73,21 @@ use Psr\Cache\CacheItemPoolInterface;
  *
  * ```
  * // Using the Pub/Sub Emulator
- * use Google\Cloud\PubSub\PubSubClient;
+ * use Google\Cloud\ServiceBuilder;
  *
  * // Be sure to use the port specified when starting the emulator.
  * // `8900` is used as an example only.
  * putenv('PUBSUB_EMULATOR_HOST=http://localhost:8900');
  *
- * $pubsub = new PubSubClient();
+ * $cloud = new ServiceBuilder();
+ * $pubsub = $cloud->pubsub();
  * ```
  */
 class PubSubClient
 {
-    use ArrayTrait;
     use ClientTrait;
     use IncomingMessageTrait;
     use ResourceNameTrait;
-
-    const VERSION = '0.3.0';
 
     const FULL_CONTROL_SCOPE = 'https://www.googleapis.com/auth/pubsub';
 
@@ -212,30 +216,27 @@ class PubSubClient
      *
      *     @type int $pageSize Maximum number of results to return per
      *           request.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
      * }
-     * @return ItemIterator<Google\Cloud\PubSub\Topic>
+     * @return Generator<Google\Cloud\PubSub\Topic>
      */
     public function topics(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $topic) {
-                    return $this->topicFactory($topic['name'], $topic);
-                },
-                [$this->connection, 'listTopics'],
-                $options + ['project' => $this->formatName('project', $this->projectId)],
-                [
-                    'itemsKey' => 'topics',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+        do {
+            $response = $this->connection->listTopics($options + [
+                'project' => $this->formatName('project', $this->projectId)
+            ]);
+
+            foreach ($response['topics'] as $topic) {
+                yield $this->topicFactory($topic['name'], $topic);
+            }
+
+            // If there's a page token, we'll request the next page.
+            $options['pageToken'] = isset($response['nextPageToken'])
+                ? $response['nextPageToken']
+                : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -311,129 +312,31 @@ class PubSubClient
      *
      *     @type int $pageSize Maximum number of results to return per
      *           request.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
      * }
-     * @return ItemIterator<Google\Cloud\PubSub\Subscription>
+     * @return \Generator<Google\Cloud\PubSub\Subscription>
      */
     public function subscriptions(array $options = [])
     {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
+        $options['pageToken'] = null;
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $subscription) {
-                    return $this->subscriptionFactory(
-                        $subscription['name'],
-                        $subscription['topic'],
-                        $subscription
-                    );
-                },
-                [$this->connection, 'listSubscriptions'],
-                $options + ['project' => $this->formatName('project', $this->projectId)],
-                [
-                    'itemsKey' => 'subscriptions',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
-    }
+        do {
+            $response = $this->connection->listSubscriptions($options + [
+                'project' => $this->formatName('project', $this->projectId)
+            ]);
 
-    /**
-     * Create a snapshot.
-     *
-     * Please note that this method may not yet be available in your project.
-     *
-     * Example:
-     * ```
-     * $subscription = $pubsub->subscription($subscriptionName);
-     * $snapshot = $pubsub->createSnapshot('my-snapshot', $subscription);
-     * ```
-     *
-     * @param string $name The snapshot name.
-     * @param Subscription $subscription The subscription to take a snapshot of.
-     * @param array $options [optional] Configuration options.
-     * @return Snapshot
-     */
-    public function createSnapshot($name, Subscription $subscription, array $options = [])
-    {
-        $snapshot = $this->snapshot($name, [
-            'subscription' => $subscription->name()
-        ]);
+            foreach ($response['subscriptions'] as $subscription) {
+                yield $this->subscriptionFactory(
+                    $subscription['name'],
+                    $subscription['topic'],
+                    $subscription
+                );
+            }
 
-        $snapshot->create($options);
-
-        return $snapshot;
-    }
-
-    /**
-     * Lazily create a snapshot instance.
-     *
-     * Example:
-     * ```
-     * $snapshot = $pubsub->snapshot('my-snapshot');
-     * ```
-     *
-     * @param string $name The snapshot name.
-     * @param array $info [optional] Snapshot info.
-     * @return Snapshot
-     */
-    public function snapshot($name, array $info = [])
-    {
-        return new Snapshot($this->connection, $this->projectId, $name, $this->encode, $info);
-    }
-
-    /**
-     * Get a list of the snapshots in the project.
-     *
-     * Please note that this method may not yet be available in your project.
-     *
-     * Example:
-     * ```
-     * $snapshots = $pubsub->snapshots();
-     * foreach ($snapshots as $snapshot) {
-     *      $info = $snapshot->info();
-     *      echo $info['name'];
-     * }
-     * ```
-     *
-     * @param array $options [optional] {
-     *     Configuration Options
-     *
-     *     @type int $pageSize Maximum number of results to return per
-     *           request.
-     *     @type int $resultLimit Limit the number of results returned in total.
-     *           **Defaults to** `0` (return all results).
-     *     @type string $pageToken A previously-returned page token used to
-     *           resume the loading of results from a specific point.
-     * }
-     * @return ItemIterator<Google\Cloud\PubSub\Snapshot>
-     */
-    public function snapshots(array $options = [])
-    {
-        $resultLimit = $this->pluck('resultLimit', $options, false);
-
-        return new ItemIterator(
-            new PageIterator(
-                function (array $snapshot) {
-                    return new Snapshot(
-                        $this->connection,
-                        $this->projectId,
-                        $this->pluckName('snapshot', $snapshot['name']),
-                        $this->encode,
-                        $snapshot
-                    );
-                },
-                [$this->connection, 'listSnapshots'],
-                ['project' => $this->formatName('project', $this->projectId)] + $options,
-                [
-                    'itemsKey' => 'snapshots',
-                    'resultLimit' => $resultLimit
-                ]
-            )
-        );
+            // If there's a page token, we'll request the next page.
+            $options['pageToken'] = isset($response['nextPageToken'])
+                ? $response['nextPageToken']
+                : null;
+        } while ($options['pageToken']);
     }
 
     /**
@@ -458,42 +361,6 @@ class PubSubClient
     }
 
     /**
-     * Create a Timestamp object.
-     *
-     * Example:
-     * ```
-     * $timestamp = $pubsub->timestamp(new \DateTime('2003-02-05 11:15:02.421827Z'));
-     * ```
-     *
-     * @param \DateTimeInterface $value The timestamp value.
-     * @param int $nanoSeconds [optional] The number of nanoseconds in the timestamp.
-     * @return Timestamp
-     */
-    public function timestamp(\DateTimeInterface $timestamp, $nanoSeconds = null)
-    {
-        return new Timestamp($timestamp, $nanoSeconds);
-    }
-
-    /**
-     * Create a Duration object.
-     *
-     * Example:
-     * ```
-     * $duration = $pubsub->duration(100, 00001);
-     * ```
-     *
-     * @param int $seconds The number of seconds in the duration.
-     * @param int $nanos [optional] The number of nanoseconds in the duration.
-     *        **Defaults to** `0`.
-     * @return Duration
-     */
-    public function duration($seconds, $nanos = 0)
-    {
-        return new Duration($seconds, $nanos);
-    }
-
-
-    /**
      * Create an instance of a topic
      *
      * @codingStandardsIgnoreStart
@@ -504,7 +371,7 @@ class PubSubClient
      * @return Topic
      * @codingStandardsIgnoreEnd
      */
-    private function topicFactory($name, array $info = [])
+    private function topicFactory($name, array $info = null)
     {
         return new Topic(
             $this->connection,
@@ -527,7 +394,7 @@ class PubSubClient
      * @return Subscription
      * @codingStandardsIgnoreEnd
      */
-    private function subscriptionFactory($name, $topicName = null, array $info = [])
+    private function subscriptionFactory($name, $topicName = null, array $info = null)
     {
         return new Subscription(
             $this->connection,
@@ -537,18 +404,5 @@ class PubSubClient
             $this->encode,
             $info
         );
-    }
-
-    /**
-     * @access private
-     * @codeCoverageIgnore
-     */
-    public function __debugInfo()
-    {
-        return [
-            'connection' => get_class($this->connection),
-            'projectId' => $this->projectId,
-            'encode' => $this->encode
-        ];
     }
 }

@@ -21,7 +21,7 @@ use Google\Auth\HttpHandler\HttpHandlerFactory;
 use Google\Cloud\BigQuery\BigQueryClient;
 use Google\Cloud\Datastore\DatastoreClient;
 use Google\Cloud\Logging\LoggingClient;
-use Google\Cloud\Language\LanguageClient;
+use Google\Cloud\NaturalLanguage\NaturalLanguageClient;
 use Google\Cloud\PubSub\PubSubClient;
 use Google\Cloud\Speech\SpeechClient;
 use Google\Cloud\Storage\StorageClient;
@@ -48,7 +48,7 @@ use Psr\Cache\CacheItemPoolInterface;
  */
 class ServiceBuilder
 {
-    const VERSION = '0.26.0';
+    const VERSION = '0.20.2';
 
     /**
      * @var array Configuration options to be used between clients.
@@ -97,9 +97,9 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud BigQuery allows you to create, manage, share and query
-     * data. Find more information at the
-     * [Google Cloud BigQuery Docs](https://cloud.google.com/bigquery/docs).
+     * Google Cloud BigQuery client. Allows you to create, manage, share and query
+     * data. Find more information at
+     * [Google Cloud BigQuery Docs](https://cloud.google.com/bigquery/what-is-bigquery).
      *
      * Example:
      * ```
@@ -111,7 +111,7 @@ class ServiceBuilder
      *     {@see Google\Cloud\ServiceBuilder::__construct()} for the other available options.
      *
      *     @type bool $returnInt64AsObject If true, 64 bit integers will be
-     *           returned as a {@see Google\Cloud\Core\Int64} object for 32 bit
+     *           returned as a {@see Google\Cloud\Int64} object for 32 bit
      *           platform compatibility. **Defaults to** false.
      * @return BigQueryClient
      */
@@ -121,8 +121,8 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud Datastore is a highly-scalable NoSQL database for your
-     * applications. Find more information at the
+     * Google Cloud Datastore client. Cloud Datastore is a highly-scalable NoSQL
+     * database for your applications.  Find more information at
      * [Google Cloud Datastore docs](https://cloud.google.com/datastore/docs/).
      *
      * Example:
@@ -135,7 +135,7 @@ class ServiceBuilder
      *     {@see Google\Cloud\ServiceBuilder::__construct()} for the other available options.
      *
      *     @type bool $returnInt64AsObject If true, 64 bit integers will be
-     *           returned as a {@see Google\Cloud\Core\Int64} object for 32 bit
+     *           returned as a {@see Google\Cloud\Int64} object for 32 bit
      *           platform compatibility. **Defaults to** false.
      * @return DatastoreClient
      */
@@ -145,9 +145,9 @@ class ServiceBuilder
     }
 
     /**
-     * Google Stackdriver Logging allows you to store, search, analyze, monitor,
-     * and alert on log data and events from Google Cloud Platform and Amazon
-     * Web Services. Find more information at the
+     * Google Stackdriver Logging client. Allows you to store, search, analyze,
+     * monitor, and alert on log data and events from Google Cloud Platform and
+     * Amazon Web Services. Find more information at
      * [Google Stackdriver Logging docs](https://cloud.google.com/logging/docs/).
      *
      * Example:
@@ -165,29 +165,29 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud Natural Language provides natural language understanding
-     * technologies to developers, including sentiment analysis, entity
-     * recognition, and syntax analysis. Currently only English, Spanish,
-     * and Japanese textual context are supported. Find more information at the
+     * Google Cloud Natural Language client. Provides natural language
+     * understanding technologies to developers, including sentiment analysis,
+     * entity recognition, and syntax analysis. Currently only English, Spanish,
+     * and Japanese textual context are supported. Find more information at
      * [Google Cloud Natural Language docs](https://cloud.google.com/natural-language/docs/).
      *
      * Example:
      * ```
-     * $language = $cloud->language();
+     * $language = $cloud->naturalLanguage();
      * ```
      *
      * @param array $config [optional] Configuration options. See
      *        {@see Google\Cloud\ServiceBuilder::__construct()} for the available options.
-     * @return LanguageClient
+     * @return NaturalLanguageClient
      */
-    public function language(array $config = [])
+    public function naturalLanguage(array $config = [])
     {
-        return new LanguageClient($config ? $this->resolveConfig($config) : $this->config);
+        return new NaturalLanguageClient($config ? $this->resolveConfig($config) : $this->config);
     }
 
     /**
-     * Google Cloud Pub/Sub allows you to send and receive messages between
-     * independent applications. Find more information at the
+     * Google Cloud Pub/Sub client. Allows you to send and receive
+     * messages between independent applications. Find more information at
      * [Google Cloud Pub/Sub docs](https://cloud.google.com/pubsub/docs/).
      *
      * Example:
@@ -210,27 +210,19 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud Speech enables easy integration of Google speech recognition
-     * technologies into developer applications. Send audio and receive a text
-     * transcription from the Cloud Speech API service. Find more information at
-     * the [Google Cloud Speech API docs](https://cloud.google.com/speech/docs/).
+     * Google Cloud Speech client. Enables easy integration of Google speech
+     * recognition technologies into developer applications. Send audio and
+     * receive a text transcription from the Cloud Speech API service. Find more
+     * information at
+     * [Google Cloud Speech API docs](https://developers.google.com/speech).
      *
      * Example:
      * ```
-     * $speech = $cloud->speech([
-     *     'languageCode' => 'en-US'
-     * ]);
+     * $speech = $cloud->speech();
      * ```
      *
-     * @param array $config [optional] {
-     *     Configuration options. See
-     *     {@see Google\Cloud\ServiceBuilder::__construct()} for the other available options.
-     *
-     *     @type string $languageCode Required. The language of the content to
-     *           be recognized. Only BCP-47 (e.g., `"en-US"`, `"es-ES"`)
-     *           language codes are accepted. See
-     *           [Language Support](https://cloud.google.com/speech/docs/languages)
-     *           for a list of the currently supported language codes.
+     * @param array $config [optional] Configuration options. See
+     *        {@see Google\Cloud\ServiceBuilder::__construct()} for the available options.
      * @return SpeechClient
      */
     public function speech(array $config = [])
@@ -239,8 +231,8 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud Storage allows you to store and retrieve data on Google's
-     * infrastructure. Find more information at the
+     * Google Cloud Storage client. Allows you to store and retrieve data on
+     * Google's infrastructure. Find more information at
      * [Google Cloud Storage API docs](https://developers.google.com/storage).
      *
      * Example:
@@ -258,10 +250,9 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud Vision allows you to understand the content of an image,
-     * classify images into categories, detect text, objects, faces and more.
-     * Find more information at the
-     * [Google Cloud Vision docs](https://cloud.google.com/vision/docs/).
+     * Google Cloud Vision client. Allows you to understand the content of an
+     * image, classify images into categories, detect text, objects, faces and
+     * more. Find more information at [Google Cloud Vision docs](https://cloud.google.com/vision/docs/).
      *
      * Example:
      * ```
@@ -278,14 +269,13 @@ class ServiceBuilder
     }
 
     /**
-     * Google Cloud Translation provides the ability to dynamically translate
-     * text between thousands of language pairs and lets websites and programs
-     * integrate with translation service programmatically.
-     *
-     * The Google Cloud Translation API is available as a paid
+     * Google Translate client. Provides the ability to dynamically
+     * translate text between thousands of language pairs and lets websites and
+     * programs integrate with the Google Cloud Translation API
+     * programmatically. The Google Cloud Translation API is available as a paid
      * service. See the [Pricing](https://cloud.google.com/translation/v2/pricing)
      * and [FAQ](https://cloud.google.com/translation/v2/faq) pages for details.
-     * Find more information at the the
+     * Find more information at the
      * [Google Cloud Translation docs](https://cloud.google.com/translation/docs/).
      *
      * Please note that while the Google Cloud Translation API supports

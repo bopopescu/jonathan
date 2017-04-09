@@ -27,9 +27,10 @@ use Psr\Http\Message\StreamInterface;
  *
  * Example:
  * ```
- * use Google\Cloud\Datastore\DatastoreClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $datastore = new DatastoreClient();
+ * $cloud = new ServiceBuilder();
+ * $datastore = $cloud->datastore();
  *
  * $blob = $datastore->blob(file_get_contents(__DIR__ .'/family-photo.jpg'));
  * ```

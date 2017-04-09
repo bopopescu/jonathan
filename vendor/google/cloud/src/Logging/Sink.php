@@ -17,7 +17,7 @@
 
 namespace Google\Cloud\Logging;
 
-use Google\Cloud\Core\Exception\NotFoundException;
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\Logging\Connection\ConnectionInterface;
 
 /**
@@ -25,9 +25,10 @@ use Google\Cloud\Logging\Connection\ConnectionInterface;
  *
  * Example:
  * ```
- * use Google\Cloud\Logging\LoggingClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $logging = new LoggingClient();
+ * $cloud = new ServiceBuilder();
+ * $logging = $cloud->logging();
  *
  * $sink = $logging->sink('my-sink');
  * ```
@@ -70,7 +71,7 @@ class Sink
      * Example:
      * ```
      * if ($sink->exists()) {
-     *     echo 'Sink exists!';
+     *     echo "Sink exists!";
      * }
      * ```
      *

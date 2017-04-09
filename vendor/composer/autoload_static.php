@@ -17,6 +17,7 @@ class ComposerStaticInit7157d173b50fe34f8b38f300d71ae83d
         array (
             'Symfony\\Component\\Process\\' => 26,
             'Symfony\\Component\\Filesystem\\' => 29,
+            'Superbalist\\Flysystem\\GoogleStorage\\' => 36,
         ),
         'P' => 
         array (
@@ -27,6 +28,10 @@ class ComposerStaticInit7157d173b50fe34f8b38f300d71ae83d
         'M' => 
         array (
             'Monolog\\' => 8,
+        ),
+        'L' => 
+        array (
+            'League\\Flysystem\\' => 17,
         ),
         'G' => 
         array (
@@ -55,6 +60,10 @@ class ComposerStaticInit7157d173b50fe34f8b38f300d71ae83d
         array (
             0 => __DIR__ . '/..' . '/symfony/filesystem',
         ),
+        'Superbalist\\Flysystem\\GoogleStorage\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/superbalist/flysystem-google-storage/src',
+        ),
         'Psr\\Log\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
@@ -70,6 +79,10 @@ class ComposerStaticInit7157d173b50fe34f8b38f300d71ae83d
         'Monolog\\' => 
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
+        ),
+        'League\\Flysystem\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/league/flysystem/src',
         ),
         'GuzzleHttp\\Psr7\\' => 
         array (

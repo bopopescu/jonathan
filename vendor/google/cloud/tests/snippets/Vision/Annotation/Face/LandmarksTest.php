@@ -98,10 +98,7 @@ class LandmarksTest extends SnippetTestCase
 
         $snippet = $this->snippetFromClass(Landmarks::class);
         $snippet->addLocal('connectionStub', $connectionStub->reveal());
-        $snippet->replace(
-            "__DIR__ . '/assets/family-photo.jpg'",
-            "'php://temp'"
-        );
+        $snippet->setLine(5, '$imageResource = fopen(\'php://temp\', \'r\');');
         $snippet->insertAfterLine(3, '$reflection = new \ReflectionClass($vision);
             $property = $reflection->getProperty(\'connection\');
             $property->setAccessible(true);
@@ -156,7 +153,7 @@ class LandmarksTest extends SnippetTestCase
 
     public function testLeftEyeBrow()
     {
-        $snippet = $this->snippetFromMethod(Landmarks::class, 'leftEyebrow');
+        $snippet = $this->snippetFromMethod(Landmarks::class, 'leftEyeBrow');
         $snippet->addLocal('landmarks', $this->landmarks);
 
         $res = $snippet->invoke();
@@ -201,7 +198,7 @@ class LandmarksTest extends SnippetTestCase
 
     public function testRightEyeBrow()
     {
-        $snippet = $this->snippetFromMethod(Landmarks::class, 'rightEyebrow');
+        $snippet = $this->snippetFromMethod(Landmarks::class, 'rightEyeBrow');
         $snippet->addLocal('landmarks', $this->landmarks);
 
         $res = $snippet->invoke();

@@ -18,52 +18,26 @@
 namespace Google\Cloud\Dev\DocGenerator\Parser;
 
 use Google\Cloud\Dev\DocBlockStripSpaces;
-use Google\Cloud\Dev\GetComponentsTrait;
 use phpDocumentor\Reflection\DocBlock;
-use phpDocumentor\Reflection\DocBlock\Context;
 use phpDocumentor\Reflection\DocBlock\Description;
 use phpDocumentor\Reflection\DocBlock\Tag\SeeTag;
 use phpDocumentor\Reflection\FileReflector;
 
 class CodeParser implements ParserInterface
 {
-    use GetComponentsTrait;
-
     const SNIPPET_NAME_REGEX = '/\/\/\s?\[snippet\=(\w{0,})\]/';
 
-    private static $composerFiles = [];
-
     private $path;
-    private $fileName;
+    private $outputName;
     private $reflector;
     private $markdown;
-    private $projectRoot;
-    private $externalTypes;
-    private $componentId;
-    private $manifestPath;
-    private $release;
-    private $isComponent;
 
-    public function __construct(
-        $path,
-        $fileName,
-        FileReflector $reflector,
-        $projectRoot,
-        $componentId,
-        $manifestPath,
-        $release,
-        $isComponent = true
-    ) {
+    public function __construct($path, $outputName, FileReflector $reflector)
+    {
         $this->path = $path;
-        $this->fileName = $fileName;
+        $this->outputName = $outputName;
         $this->reflector = $reflector;
         $this->markdown = \Parsedown::instance();
-        $this->projectRoot = $projectRoot;
-        $this->externalTypes = json_decode(file_get_contents(__DIR__ .'/../../../../docs/external-classes.json'), true);
-        $this->componentId = $componentId;
-        $this->manifestPath = $manifestPath;
-        $this->release = $release;
-        $this->isComponent = $isComponent;
     }
 
     public function parse()
@@ -86,7 +60,7 @@ class CodeParser implements ParserInterface
             return $fileReflector->getTraits()[0];
         }
 
-        throw new \Exception('Could not get reflector for '. $this->fileName);
+        throw new \Exception('Could not get reflector for '. $this->outputName);
     }
 
     private function buildDocument($reflector)
@@ -146,11 +120,8 @@ class CodeParser implements ParserInterface
             foreach ($parsedContents as &$part) {
                 if ($part instanceof Seetag) {
                     $reference = $part->getReference();
-
                     if (substr_compare($reference, 'Google\Cloud', 0, 12) === 0) {
                         $part = $this->buildLink($reference);
-                    } elseif ($this->hasExternalType(trim(str_replace('@see', '', $part)))) {
-                        $part = $this->buildExternalType(trim(str_replace('@see', '', $part)));
                     }
                 }
             }
@@ -221,7 +192,7 @@ class CodeParser implements ParserInterface
             'id' => $method->getName(),
             'type' => $method->getName() === '__construct' ? 'constructor' : 'instance',
             'name' => $method->getName(),
-            'source' => $this->getSource() . '#L' . $method->getLineNumber(),
+            'source' => $this->outputName . '#L' . $method->getLineNumber(),
             'description' => $this->buildDescription($docBlock, $split['description']),
             'examples' => $this->buildExamples($split['examples']),
             'resources' => $this->buildResources($resources),
@@ -254,7 +225,7 @@ class CodeParser implements ParserInterface
             'id' => $magicMethod->getMethodName(),
             'type' => $magicMethod->getMethodName() === '__construct' ? 'constructor' : 'instance',
             'name' => $magicMethod->getMethodName(),
-            'source' => $this->getSource(),
+            'source' => $this->outputName,
             'description' => $this->buildDescription($docBlock, $docText),
             'examples' => $this->buildExamples($examples),
             'resources' => $this->buildResources($resources),
@@ -444,11 +415,8 @@ class CodeParser implements ParserInterface
         $returnsArray = [];
 
         foreach ($returns as $return) {
-            $context = $return->getDocBlock()->getContext();
-            $aliases = $context ? $context->getNamespaceAliases() : [];
-
             $returnsArray[] = [
-                'types' => $this->handleTypes($return->getTypes(), $aliases),
+                'types' => $this->handleTypes($return->getTypes()),
                 'description' => $this->buildDescription(null, $return->getDescription())
             ];
         }
@@ -456,135 +424,43 @@ class CodeParser implements ParserInterface
         return $returnsArray;
     }
 
-    private function handleTypes($types, array $aliases = [])
+    private function handleTypes($types)
     {
-        $res = [];
-        foreach ($types as $type) {
-            $matches = [];
-
-            if (preg_match('/\\\\?(.*?)\<(.*?)\>/', $type, $matches)) {
-                $matches[1] = $this->resolveTypeAlias($matches[1], $aliases);
-                $matches[2] = $this->resolveTypeAlias($matches[2], $aliases);
-
-                $iteratorType = $matches[1];
-                if (strpos($matches[1], '\\') !== FALSE) {
-                    $matches[1] = $this->buildLink($matches[1]);
-                }
-
-                $typeLink = $matches[2];
-                if (strpos($matches[2], '\\') !== FALSE) {
-                    $matches[2] = $this->buildLink($matches[2]);
-                }
-
-                $type = sprintf(htmlentities('%s<%s>'), $matches[1], $matches[2]);
-            } elseif (substr_compare($type, '\\Google\\Cloud', 0, 13) === 0) {
-                $type = $this->buildLink($type);
-            } elseif ($this->hasExternalType($type)) {
-                $type = $this->buildExternalType($type);
+        foreach ($types as &$type) {
+            // object is a PHPDoc keyword so it is not capable of detecting the context
+            // https://github.com/phpDocumentor/ReflectionDocBlock/blob/2.0.4/src/phpDocumentor/Reflection/DocBlock/Type/Collection.php#L37
+            if ($type === 'Object') {
+                $type = '\Google\Cloud\Storage\Object';
             }
 
-            $res[] = $type;
+            if (substr_compare($type, '\Google\Cloud', 0, 13) === 0) {
+                $type = $this->buildLink($type);
+            }
+
+            $matches = [];
+            if (preg_match('/\\\\?Generator\<(.*?)\>/', $type, $matches)) {
+                $typeLink = $matches[1];
+                if (strpos($matches[1], '\\') !== FALSE) {
+                    $typeLink = $this->buildLink($matches[1]);
+                }
+
+                $type = sprintf(htmlentities('Generator<%s>'), $typeLink);
+            }
         }
 
-        return $res;
-    }
-
-    private function resolveTypeAlias($type, array $aliases)
-    {
-        $pieces = explode('\\', $type);
-        $basename = array_pop($pieces);
-        if (array_key_exists($basename, $aliases)) {
-            $type = $aliases[$basename];
-        }
-
-        return $type;
-    }
-
-    private function hasExternalType($type)
-    {
-        $type = trim($type, '\\');
-        $types = array_filter($this->externalTypes, function ($external) use ($type) {
-            return (strpos($type, $external['name']) !== false);
-        });
-
-        if (count($types) === 0) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function buildExternalType($type)
-    {
-        $type = trim($type, '\\');
-        $types = array_values(array_filter($this->externalTypes, function ($external) use ($type) {
-            return (strpos($type, $external['name']) !== false);
-        }));
-
-        $external = $types[0];
-
-        $href = sprintf($external['uri'], str_replace($external['name'], '', $type));
-        return sprintf(
-            '<a href="%s" target="_blank">%s</a>',
-            $href,
-            $type
-        );
+        return $types;
     }
 
     private function buildLink($content)
     {
-        $componentId = null;
-        if ($this->isComponent && substr_compare(trim($content, '\\'), 'Google\Cloud', 0, 12) === 0) {
-            try {
-                $matches = [];
-                preg_match('/[Generator\<]?(Google\\\Cloud\\\[\w\\\]{0,})[\>]?[\[\]]?/', $content, $matches);
-                $ref = new \ReflectionClass($matches[1]);
-            } catch (\ReflectionException $e) {
-                throw new \Exception(sprintf(
-                    'Reflection Exception: %s in %s. Given class was %s',
-                    $e->getMessage(),
-                    realpath($this->path),
-                    $content
-                ));
-            }
-
-            $recurse = true;
-            $file = $ref->getFileName();
-
-            if (strpos($file, dirname(realpath($this->path))) !== false) {
-                $recurse = false;
-            }
-
-            do {
-                $composer = dirname($file) .'/composer.json';
-                if (file_exists($composer) && $component = $this->isComponent($composer)) {
-                    $componentId = $component['id'];
-                    if ($componentId === $this->componentId) {
-                        $componentId = null;
-                    }
-                    $recurse = false;
-                } elseif (trim($file, '/') === trim($this->projectRoot, '/')) {
-                    $recurse = false;
-                } else {
-                    $file = dirname($file);
-                }
-            } while($recurse);
+        if ($content[0] === '\\') {
+            $content = substr($content, 1);
         }
-
-        $content = trim($content, '\\');
 
         $displayName = $content;
         $content = substr($content, 13);
         $parts = explode('::', $content);
         $type = strtolower(str_replace('\\', '/', $parts[0]));
-
-        if ($componentId) {
-            $version = ($this->release)
-                ? $this->getComponentVersion($this->manifestPath, $componentId)
-                : 'master';
-
-            $type = $componentId .'/'. $version .'/'. $type;
-        }
 
         $openTag = '<a data-custom-type="' . $type . '"';
 
@@ -611,26 +487,5 @@ class CodeParser implements ParserInterface
             'description' => $parts[0],
             'examples' => $examples
         ];
-    }
-
-    private function isComponent($composerPath)
-    {
-        if (isset(self::$composerFiles[$composerPath])) {
-            $contents = self::$composerFiles[$composerPath];
-        } else {
-            $contents = json_decode(file_get_contents($composerPath), true);
-            self::$composerFiles[$composerPath] = $contents;
-        }
-
-        if (isset($contents['extra']['component'])) {
-            return $contents['extra']['component'];
-        }
-
-        return false;
-    }
-
-    private function getSource()
-    {
-        return 'src' . explode('src', $this->path)[1];
     }
 }

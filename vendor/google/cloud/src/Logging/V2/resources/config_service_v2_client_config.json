@@ -2,13 +2,13 @@
   "interfaces": {
     "google.logging.v2.ConfigServiceV2": {
       "retry_codes": {
-        "idempotent": [
-          "DEADLINE_EXCEEDED",
-          "UNAVAILABLE"
-        ],
-        "non_idempotent": [
-          "UNAVAILABLE"
-        ]
+        "retry_codes_def": {
+          "idempotent": [
+            "DEADLINE_EXCEEDED",
+            "UNAVAILABLE"
+          ],
+          "non_idempotent": []
+        }
       },
       "retry_params": {
         "default": {

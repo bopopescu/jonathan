@@ -26,9 +26,10 @@ use Psr\Http\Message\StreamInterface;
  *
  * Example:
  * ```
- * use Google\Cloud\BigQuery\BigQueryClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $bigQuery = new BigQueryClient();
+ * $cloud = new ServiceBuilder();
+ * $bigQuery = $cloud->bigQuery();
  *
  * $bytes = $bigQuery->bytes('hello world');
  * ```

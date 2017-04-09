@@ -19,19 +19,14 @@ class GoogleSpeech{
     }
 
     function translate($audioFileName){
-        # The name of the audio file to transcribe
-        $fileName = __DIR__ . '/../uploads/'.$audioFileName;
-
         # The audio file's encoding and sample rate
         $options = [
-            'encoding' => 'LINEAR16',
-            'sampleRateHertz' => 16000,
+            'encoding' => 'FLAC',
+            'sampleRate' => 8000,
         ];
 
         # Detects speech in the audio file
-        $results = $this->speech->recognize(fopen($fileName, 'r'), $options);
-
-        echo 'Transcription: ' . $results[0]['transcript'];
+        $results = $this->speech->recognize($audioFileName, $options);
 
         return $results;
     }

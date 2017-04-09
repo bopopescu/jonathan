@@ -176,10 +176,6 @@ class Parser
             $method = new ReflectionMethod($class, $method);
         }
 
-        if (!$method->isPublic()) {
-            return [];
-        }
-
         $doc = new DocBlock($method);
 
         $parent = $method->getDeclaringClass();

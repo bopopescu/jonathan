@@ -2,13 +2,13 @@
   "interfaces": {
     "google.monitoring.v3.GroupService": {
       "retry_codes": {
-        "idempotent": [
-          "DEADLINE_EXCEEDED",
-          "UNAVAILABLE"
-        ],
-        "non_idempotent": [
-          "UNAVAILABLE"
-        ]
+        "retry_codes_def": {
+          "idempotent": [
+            "DEADLINE_EXCEEDED",
+            "UNAVAILABLE"
+          ],
+          "non_idempotent": []
+        }
       },
       "retry_params": {
         "default": {

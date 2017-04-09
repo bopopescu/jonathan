@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2017, Google Inc. All rights reserved.
+ * Copyright 2016, Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ class MetricServiceClient
     /**
      * The code generator version, to be included in the agent header.
      */
-    const CODEGEN_VERSION = '0.0.5';
+    const CODEGEN_VERSION = '0.1.0';
 
     private static $projectNameTemplate;
     private static $metricDescriptorNameTemplate;
@@ -265,17 +265,6 @@ class MetricServiceClient
         return $pageStreamingDescriptors;
     }
 
-    private static function getGapicVersion()
-    {
-        if (file_exists(__DIR__.'/../VERSION')) {
-            return trim(file_get_contents(__DIR__.'/../VERSION'));
-        } elseif (class_exists('\Google\Cloud\ServiceBuilder')) {
-            return \Google\Cloud\ServiceBuilder::VERSION;
-        } else {
-            return;
-        }
-    }
-
     // TODO(garrettjones): add channel (when supported in gRPC)
     /**
      * Constructor.
@@ -301,6 +290,9 @@ class MetricServiceClient
      *                              that don't use retries. For calls that use retries,
      *                              set the timeout in RetryOptions.
      *                              Default: 30000 (30 seconds)
+     *     @type string $appName The codename of the calling service. Default 'gax'.
+     *     @type string $appVersion The version of the calling service.
+     *                              Default: the current version of GAX.
      *     @type \Google\Auth\CredentialsLoader $credentialsLoader
      *                              A CredentialsLoader object created using the
      *                              Google\Auth library.
@@ -319,17 +311,18 @@ class MetricServiceClient
             ],
             'retryingOverride' => null,
             'timeoutMillis' => self::DEFAULT_TIMEOUT_MILLIS,
-            'libName' => null,
-            'libVersion' => null,
+            'appName' => 'gax',
+            'appVersion' => AgentHeaderDescriptor::getGaxVersion(),
         ];
         $options = array_merge($defaultOptions, $options);
 
-        $gapicVersion = $options['libVersion'] ?: self::getGapicVersion();
-
         $headerDescriptor = new AgentHeaderDescriptor([
-            'libName' => $options['libName'],
-            'libVersion' => $options['libVersion'],
-            'gapicVersion' => $gapicVersion,
+            'clientName' => $options['appName'],
+            'clientVersion' => $options['appVersion'],
+            'codeGenName' => self::CODEGEN_NAME,
+            'codeGenVersion' => self::CODEGEN_VERSION,
+            'gaxVersion' => AgentHeaderDescriptor::getGaxVersion(),
+            'phpVersion' => phpversion(),
         ]);
 
         $defaultDescriptors = ['headerDescriptor' => $headerDescriptor];
@@ -414,7 +407,7 @@ class MetricServiceClient
      *                             Optional.
      *
      *     @type string $filter
-     *          An optional [filter](https://cloud.google.com/monitoring/api/v3/filters) describing
+     *          An optional [filter](/monitoring/api/v3/filters) describing
      *          the descriptors to be returned.  The filter can reference
      *          the descriptor's type and labels. For example, the
      *          following filter returns only Google Compute Engine descriptors
@@ -560,10 +553,10 @@ class MetricServiceClient
      *     @type string $filter
      *          If this field is empty, all custom and
      *          system-defined metric descriptors are returned.
-     *          Otherwise, the [filter](https://cloud.google.com/monitoring/api/v3/filters)
+     *          Otherwise, the [filter](/monitoring/api/v3/filters)
      *          specifies which metric descriptors are to be
      *          returned. For example, the following filter matches all
-     *          [custom metrics](https://cloud.google.com/monitoring/custom-metrics):
+     *          [custom metrics](/monitoring/custom-metrics):
      *
      *              metric.type = starts_with("custom.googleapis.com/")
      *     @type int $pageSize
@@ -674,7 +667,7 @@ class MetricServiceClient
     /**
      * Creates a new metric descriptor.
      * User-created metric descriptors define
-     * [custom metrics](https://cloud.google.com/monitoring/custom-metrics).
+     * [custom metrics](/monitoring/custom-metrics).
      *
      * Sample code:
      * ```
@@ -690,7 +683,7 @@ class MetricServiceClient
      *
      * @param string           $name             The project on which to execute the request. The format is
      *                                           `"projects/{project_id_or_number}"`.
-     * @param MetricDescriptor $metricDescriptor The new [custom metric](https://cloud.google.com/monitoring/custom-metrics)
+     * @param MetricDescriptor $metricDescriptor The new [custom metric](/monitoring/custom-metrics)
      *                                           descriptor.
      * @param array            $optionalArgs     {
      *                                           Optional.
@@ -731,7 +724,7 @@ class MetricServiceClient
 
     /**
      * Deletes a metric descriptor. Only user-created
-     * [custom metrics](https://cloud.google.com/monitoring/custom-metrics) can be deleted.
+     * [custom metrics](/monitoring/custom-metrics) can be deleted.
      *
      * Sample code:
      * ```
@@ -813,7 +806,7 @@ class MetricServiceClient
      *
      * @param string $name   The project on which to execute the request. The format is
      *                       "projects/{project_id_or_number}".
-     * @param string $filter A [monitoring filter](https://cloud.google.com/monitoring/api/v3/filters) that specifies which time
+     * @param string $filter A [monitoring filter](/monitoring/api/v3/filters) that specifies which time
      *                       series should be returned.  The filter must specify a single metric type,
      *                       and can additionally specify metric labels and other information. For
      *                       example:

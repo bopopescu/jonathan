@@ -17,17 +17,14 @@
 
 namespace Google\Cloud\Tests\Snippets\Storage;
 
-use Google\Cloud\Core\Exception\GoogleException;
-use Google\Cloud\Core\Iam\Iam;
-use Google\Cloud\Core\Upload\MultipartUploader;
-use Google\Cloud\Core\Upload\ResumableUploader;
-use Google\Cloud\Core\Upload\StreamableUploader;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
+use Google\Cloud\Exception\GoogleException;
 use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\Connection\ConnectionInterface;
-use Google\Cloud\Storage\ObjectIterator;
 use Google\Cloud\Storage\StorageObject;
+use Google\Cloud\Upload\MultipartUploader;
+use Google\Cloud\Upload\ResumableUploader;
 use Prophecy\Argument;
 
 /**
@@ -199,26 +196,6 @@ class BucketTest extends SnippetTestCase
         $res = $snippet->invoke('object');
     }
 
-    public function testGetStreamableUploader()
-    {
-        $snippet = $this->snippetFromMethod(Bucket::class, 'getStreamableUploader');
-        $snippet->addLocal('bucket', $this->bucket);
-        $snippet->addUse(GoogleException::class);
-        $snippet->replace("data.txt", 'php://temp');
-
-        $uploader = $this->prophesize(StreamableUploader::class);
-        $uploader->upload()
-            ->shouldBeCalledTimes(1);
-
-        $this->connection->insertObject(Argument::any())
-            ->shouldBeCalled()
-            ->willReturn($uploader->reveal());
-
-        $this->bucket->setConnection($this->connection->reveal());
-
-        $res = $snippet->invoke();
-    }
-
     public function testObject()
     {
         $snippet = $this->snippetFromMethod(Bucket::class, 'object');
@@ -237,21 +214,15 @@ class BucketTest extends SnippetTestCase
             ->shouldBeCalled()
             ->willReturn([
                 'items' => [
-                    [
-                        'name' => 'object 1',
-                        'generation' => 'abc'
-                    ],
-                    [
-                        'name' => 'object 2',
-                        'generation' => 'def'
-                    ]
+                    ['name' => 'object 1'],
+                    ['name' => 'object 2']
                 ]
             ]);
 
         $this->bucket->setConnection($this->connection->reveal());
 
         $res = $snippet->invoke('objects');
-        $this->assertInstanceOf(ObjectIterator::class, $res->returnVal());
+        $this->assertInstanceOf(\Generator::class, $res->returnVal());
         $this->assertEquals('object 1', explode("\n", $res->output())[0]);
         $this->assertEquals('object 2', explode("\n", $res->output())[1]);
     }
@@ -369,14 +340,5 @@ class BucketTest extends SnippetTestCase
 
         $res = $snippet->invoke();
         $this->assertEquals(self::BUCKET, $res->output());
-    }
-
-    public function testIam()
-    {
-        $snippet = $this->snippetFromMethod(Bucket::class, 'iam');
-        $snippet->addLocal('bucket', $this->bucket);
-
-        $res = $snippet->invoke('iam');
-        $this->assertInstanceOf(Iam::class, $res->returnVal());
     }
 }

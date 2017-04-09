@@ -18,9 +18,7 @@
 namespace Google\Cloud\BigQuery;
 
 use Google\Cloud\BigQuery\Connection\ConnectionInterface;
-use Google\Cloud\Core\Exception\GoogleException;
-use Google\Cloud\Core\Iterator\ItemIterator;
-use Google\Cloud\Core\Iterator\PageIterator;
+use Google\Cloud\Exception\GoogleException;
 
 /**
  * QueryResults represent the result of a BigQuery SQL query. Read more at the
@@ -33,7 +31,7 @@ use Google\Cloud\Core\Iterator\PageIterator;
 class QueryResults
 {
     /**
-     * @var ConnectionInterface Represents a connection to BigQuery.
+     * @var ConnectionInterface $connection Represents a connection to BigQuery.
      */
     protected $connection;
 
@@ -97,7 +95,7 @@ class QueryResults
      * | `\DateTimeInterface`                       | `DATETIME`                           |
      * | {@see Google\Cloud\BigQuery\Bytes}         | `BYTES`                              |
      * | {@see Google\Cloud\BigQuery\Date}          | `DATE`                               |
-     * | {@see Google\Cloud\Core\Int64}             | `INTEGER`                            |
+     * | {@see Google\Cloud\Int64}                  | `INTEGER`                            |
      * | {@see Google\Cloud\BigQuery\Time}          | `TIME`                               |
      * | {@see Google\Cloud\BigQuery\Timestamp}     | `TIMESTAMP`                          |
      * | Associative Array                          | `RECORD`                             |
@@ -121,7 +119,7 @@ class QueryResults
      * ```
      *
      * @param array $options [optional] Configuration options.
-     * @return ItemIterator
+     * @return array
      * @throws GoogleException Thrown if the query has not yet completed.
      */
     public function rows(array $options = [])
@@ -130,37 +128,40 @@ class QueryResults
             throw new GoogleException('The query has not completed yet.');
         }
 
+        if (!isset($this->info['rows'])) {
+            return;
+        }
+
         $schema = $this->info['schema']['fields'];
 
-        return new ItemIterator(
-            new PageIterator(
-                function (array $row) use ($schema) {
-                    $mergedRow = [];
+        while (true) {
+            $options['pageToken'] = isset($this->info['pageToken']) ? $this->info['pageToken'] : null;
 
-                    if ($row === null) {
-                        return $mergedRow;
-                    }
+            foreach ($this->info['rows'] as $row) {
+                $mergedRow = [];
 
-                    if (!array_key_exists('f', $row)) {
-                        throw new GoogleException('Bad response - missing key "f" for a row.');
-                    }
+                if ($row === null) {
+                    continue;
+                }
 
-                    foreach ($row['f'] as $key => $value) {
-                        $fieldSchema = $schema[$key];
-                        $mergedRow[$fieldSchema['name']] = $this->mapper->fromBigQuery($value, $fieldSchema);
-                    }
+                if (!array_key_exists('f', $row)) {
+                    throw new GoogleException('Bad response - missing key "f" for a row.');
+                }
 
-                    return $mergedRow;
-                },
-                [$this->connection, 'getQueryResults'],
-                $options + $this->identity,
-                [
-                    'itemsKey' => 'rows',
-                    'firstPage' => $this->info,
-                    'nextResultTokenKey' => 'pageToken'
-                ]
-            )
-        );
+                foreach ($row['f'] as $key => $value) {
+                    $fieldSchema = $schema[$key];
+                    $mergedRow[$fieldSchema['name']] = $this->mapper->fromBigQuery($value, $fieldSchema);
+                }
+
+                yield $mergedRow;
+            }
+
+            if (!$options['pageToken']) {
+                return;
+            }
+
+            $this->info = $this->connection->getQueryResults($options + $this->identity);
+        }
     }
 
     /**
@@ -231,7 +232,7 @@ class QueryResults
      * @param array $options [optional] {
      *     Configuration options.
      *
-     *     @type int $maxResults Maximum number of results to read per page.
+     *     @type int $maxResults Maximum number of results to read.
      *     @type int $startIndex Zero-based index of the starting row.
      *     @type int $timeoutMs How long to wait for the query to complete, in
      *           milliseconds. **Defaults to** `10000` milliseconds (10 seconds).

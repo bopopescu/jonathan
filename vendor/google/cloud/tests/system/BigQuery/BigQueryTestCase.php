@@ -18,7 +18,7 @@
 namespace Google\Cloud\Tests\System\BigQuery;
 
 use Google\Cloud\BigQuery\BigQueryClient;
-use Google\Cloud\Core\ExponentialBackoff;
+use Google\Cloud\ExponentialBackoff;
 use Google\Cloud\Storage\StorageClient;
 
 class BigQueryTestCase extends \PHPUnit_Framework_TestCase
@@ -39,7 +39,18 @@ class BigQueryTestCase extends \PHPUnit_Framework_TestCase
         }
 
         $keyFilePath = getenv('GOOGLE_CLOUD_PHP_TESTS_KEY_PATH');
-        $schema = json_decode(file_get_contents(__DIR__ . '/../data/table-schema.json'), true);
+        $schema = [
+            'fields' => [
+                [
+                    'name' => 'city',
+                    'type' => 'STRING'
+                ],
+                [
+                    'name' => 'state',
+                    'type' => 'STRING'
+                ]
+            ]
+        ];
         self::$bucket = (new StorageClient([
             'keyFilePath' => $keyFilePath
         ]))->createBucket(uniqid(self::TESTING_PREFIX));
@@ -48,9 +59,7 @@ class BigQueryTestCase extends \PHPUnit_Framework_TestCase
         ]);
         self::$dataset = self::$client->createDataset(uniqid(self::TESTING_PREFIX));
         self::$table = self::$dataset->createTable(uniqid(self::TESTING_PREFIX), [
-            'schema' => [
-                'fields' => $schema
-            ]
+            'schema' => $schema
         ]);
         self::$hasSetUp = true;
     }

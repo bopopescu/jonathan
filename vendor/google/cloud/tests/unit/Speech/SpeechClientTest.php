@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Tests\Unit\Speech;
+namespace Google\Cloud\Tests\Speech;
 
 use Google\Cloud\Speech\Connection\ConnectionInterface;
 use Google\Cloud\Speech\Operation;
@@ -33,18 +33,8 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->client = new SpeechTestClient([
-            'languageCode' => 'en-US'
-        ]);
+        $this->client = new SpeechTestClient();
         $this->connection = $this->prophesize(ConnectionInterface::class);
-    }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     */
-    public function testClientInstantiationThrowsExceptionWithoutLanguageCode()
-    {
-        $client = new SpeechTestClient();
     }
 
     /**
@@ -55,7 +45,7 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
         $transcript = 'testing';
         $confidence = 1.0;
         $this->connection
-            ->recognize($expectedOptions)
+            ->syncRecognize($expectedOptions)
             ->willReturn([
                 'results' => [
                     [
@@ -92,7 +82,7 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
     public function testRecognizeThrowsExceptionWhenCannotDetectSampleRate()
     {
         $this->client->recognize('abcd', [
-            'encoding' => 'MULAW'
+            'encoding' => 'FLAC'
         ]);
     }
 
@@ -102,7 +92,7 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
     public function testBeginRecognizeOperation($audio, array $options, array $expectedOptions)
     {
         $this->connection
-            ->longRunningRecognize($expectedOptions)
+            ->asyncRecognize($expectedOptions)
             ->willReturn(['name' => '1234abc'])
             ->shouldBeCalledTimes(1);
         $this->client->setConnection($this->connection->reveal());
@@ -124,11 +114,10 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
     {
         stream_wrapper_unregister('http');
         stream_wrapper_register('http', HttpStreamWrapper::class);
-        $gcsUri = 'gs://bucket/object';
         $amrMock = $this->prophesize(StorageObject::class);
-        $amrMock->gcsUri(Argument::any())->willReturn($gcsUri . '.amr');
+        $amrMock->identity(Argument::any())->willReturn(['bucket' => 'bucket', 'object' => 'object.amr']);
         $awbMock = $this->prophesize(StorageObject::class);
-        $awbMock->gcsUri(Argument::any())->willReturn($gcsUri . '.awb');
+        $awbMock->identity(Argument::any())->willReturn(['bucket' => 'bucket', 'object' => 'object.awb']);
         $audioPath = __DIR__ . '/../data/brooklyn.flac';
 
         return [
@@ -136,12 +125,10 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                 fopen($audioPath, 'r'),
                 [
                     'maxAlternatives' => 1,
-                    'languageCode' => 'en-GB',
+                    'languageCode' => 'en-US',
                     'profanityFilter' => false,
-                    'speechContexts' => [
-                        [
-                            'phrases' => ['Test']
-                        ]
+                    'speechContext' => [
+                        'phrases' => ['Test']
                     ]
                 ],
                 [
@@ -150,13 +137,12 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                     ],
                     'config' => [
                         'encoding' => 'FLAC',
+                        'sampleRate' => 16000,
                         'maxAlternatives' => 1,
-                        'languageCode' => 'en-GB',
+                        'languageCode' => 'en-US',
                         'profanityFilter' => false,
-                        'speechContexts' => [
-                            [
-                                'phrases' => ['Test']
-                            ]
+                        'speechContext' => [
+                            'phrases' => ['Test']
                         ]
                     ]
                 ]
@@ -165,7 +151,7 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                 file_get_contents($audioPath),
                 [
                     'encoding' => 'FLAC',
-                    'sampleRateHertz' => 16000
+                    'sampleRate' => 16000
                 ],
                 [
                     'audio' => [
@@ -173,23 +159,20 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                     ],
                     'config' => [
                         'encoding' => 'FLAC',
-                        'sampleRateHertz' => 16000,
-                        'languageCode' => 'en-US',
+                        'sampleRate' => 16000
                     ]
                 ]
             ],
             [
                 file_get_contents($audioPath),
-                [
-                    'encoding' => 'FLAC'
-                ],
+                [],
                 [
                     'audio' => [
-                        'content' => base64_encode(file_get_contents($audioPath)),
+                        'content' => base64_encode(file_get_contents($audioPath))
                     ],
                     'config' => [
                         'encoding' => 'FLAC',
-                        'languageCode' => 'en-US',
+                        'sampleRate' => 16000
                     ]
                 ]
             ],
@@ -202,8 +185,7 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                     ],
                     'config' => [
                         'encoding' => 'AMR',
-                        'sampleRateHertz' => 8000,
-                        'languageCode' => 'en-US',
+                        'sampleRate' => 8000
                     ]
                 ]
             ],
@@ -216,32 +198,14 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                     ],
                     'config' => [
                         'encoding' => 'AMR_WB',
-                        'sampleRateHertz' => 16000,
-                        'languageCode' => 'en-US',
-                    ]
-                ]
-            ],
-            [
-                $gcsUri,
-                [
-                    'encoding' => 'FLAC',
-                    'sampleRateHertz' => 16000
-                ],
-                [
-                    'audio' => [
-                        'uri' => $gcsUri
-                    ],
-                    'config' => [
-                        'encoding' => 'FLAC',
-                        'sampleRateHertz' => 16000,
-                        'languageCode' => 'en-US',
+                        'sampleRate' => 16000
                     ]
                 ]
             ],
             [
                 fopen('http://www.example.com/file.flac', 'r'),
                 [
-                    'sampleRateHertz' => 16000
+                    'sampleRate' => 16000
                 ],
                 [
                     'audio' => [
@@ -249,8 +213,7 @@ class SpeechClientTest extends \PHPUnit_Framework_TestCase
                     ],
                     'config' => [
                         'encoding' => 'FLAC',
-                        'sampleRateHertz' => 16000,
-                        'languageCode' => 'en-US',
+                        'sampleRate' => 16000
                     ]
                 ]
             ]

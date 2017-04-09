@@ -28,14 +28,13 @@ use Psr\Log\LogLevel;
  *
  * Example:
  * ```
- * use Google\Cloud\Logging\LoggingClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $logging = new LoggingClient();
+ * $cloud = new ServiceBuilder();
+ * $logging = $cloud->logging();
  *
  * $psrLogger = $logging->psrLogger('my-log');
  * ```
- *
- * @see http://www.php-fig.org/psr/psr-3/#psrlogloggerinterface Psr\Log\LoggerInterface
  */
 class PsrLogger implements LoggerInterface
 {
@@ -228,6 +227,7 @@ class PsrLogger implements LoggerInterface
      * ]);
      * ```
      *
+     * @codingStandardsIgnoreStart
      * @param string|int $level The severity of the log entry.
      * @param string $message The message to log.
      * @param array $context {
@@ -239,12 +239,12 @@ class PsrLogger implements LoggerInterface
      *     Stackdriver specific data.
      *
      *     @type array $stackdriverOptions['resource'] The
-     *           [monitored resource](https://cloud.google.com/logging/docs/api/reference/rest/v2/MonitoredResource)
+     *           [monitored resource](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/MonitoredResource)
      *           to associate this log entry with. **Defaults to** type global.
      *     @type array $stackdriverOptions['httpRequest'] Information about the
      *           HTTP request associated with this log entry, if applicable.
      *           Please see
-     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/v2/LogEntry#httprequest)
+     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/LogEntry#httprequest)
      *           for more information.
      *     @type array $stackdriverOptions['labels'] A set of user-defined
      *           (key, value) data that provides additional information about
@@ -252,10 +252,11 @@ class PsrLogger implements LoggerInterface
      *     @type array $stackdriverOptions['operation'] Additional information
      *           about a potentially long-running operation with which a log
      *           entry is associated. Please see
-     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/v2/LogEntry#logentryoperation)
+     *           [the API docs](https://cloud.google.com/logging/docs/api/reference/rest/Shared.Types/LogEntry#logentryoperation)
      *           for more information.
      * }
      * @throws InvalidArgumentException
+     * @codingStandardsIgnoreEnd
      */
     public function log($level, $message, array $context = [])
     {

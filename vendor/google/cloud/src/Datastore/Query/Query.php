@@ -31,9 +31,10 @@ use InvalidArgumentException;
  *
  * Example:
  * ```
- * use Google\Cloud\Datastore\DatastoreClient;
+ * use Google\Cloud\ServiceBuilder;
  *
- * $datastore = new DatastoreClient();
+ * $cloud = new ServiceBuilder();
+ * $datastore = $cloud->datastore();
  *
  * $query = $datastore->query();
  * $query->kind('Companies');
@@ -131,10 +132,9 @@ class Query implements QueryInterface
     private $query;
 
     /**
-     * @codingStandardsIgnoreStart
      * @param EntityMapper $entityMapper An instance of EntityMapper
-     * @param array $query [optional] [Query](https://cloud.google.com/datastore/reference/rest/v1/projects/runQuery#query)
-     * @codingStandardsIgnoreEnd
+     * @param array $query [optional]
+     *        [Query](https://cloud.google.com/datastore/reference/rest/v1/projects/runQuery#query)
      */
     public function __construct(EntityMapper $entityMapper, array $query = [])
     {
@@ -306,10 +306,7 @@ class Query implements QueryInterface
      * @see https://cloud.google.com/datastore/reference/rest/v1/projects/runQuery#Direction Allowed Directions
      *
      * @param string $property The property to order by.
-     * @param string $direction [optional] The direction to order in. Google
-     *        Cloud PHP provides class constants which map to allowed Datastore
-     *        values. Those constants are `Query::ORDER_DESCENDING` and
-     *        `Query::ORDER_ASCENDING`. **Defaults to** `Query::ORDER_ACENDING`.
+     * @param string $direction The direction to order in.
      * @return Query
      */
     public function order($property, $direction = self::ORDER_DEFAULT)

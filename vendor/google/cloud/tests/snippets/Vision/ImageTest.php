@@ -29,10 +29,7 @@ class ImageTest extends SnippetTestCase
     public function testImageFromServiceBuilder()
     {
         $snippet = $this->snippetFromClass(Image::class, 'default');
-        $snippet->replace(
-            "__DIR__ . '/assets/family-photo.jpg'",
-            "'php://temp'"
-        );
+        $snippet->setLine(6, '$imageResource = fopen(\'php://temp\', \'r\');');
 
         $res = $snippet->invoke('image');
         $this->assertInstanceOf(Image::class, $res->returnVal());
@@ -41,10 +38,7 @@ class ImageTest extends SnippetTestCase
     public function testDirectInstantiation()
     {
         $snippet = $this->snippetFromClass(Image::class, 'direct');
-        $snippet->replace(
-            "__DIR__ . '/assets/family-photo.jpg'",
-            "'php://temp'"
-        );
+        $snippet->setLine(4, '$imageResource = fopen(\'php://temp\', \'r\');');
 
         $res = $snippet->invoke('image');
         $this->assertInstanceOf(Image::class, $res->returnVal());
@@ -82,10 +76,7 @@ class ImageTest extends SnippetTestCase
     public function testFeatureShortcuts()
     {
         $snippet = $this->snippetFromClass(Image::class, 'shortcut');
-        $snippet->replace(
-            "__DIR__ . '/assets/family-photo.jpg'",
-            "'php://temp'"
-        );
+        $snippet->setLine(5, '$imageResource = fopen(\'php://temp\', \'r\');');
 
         $res = $snippet->invoke('image');
         $this->assertInstanceOf(Image::class, $res->returnVal());
@@ -94,10 +85,7 @@ class ImageTest extends SnippetTestCase
     public function testRequestObject()
     {
         $snippet = $this->snippetFromMethod(Image::class, 'requestObject');
-        $snippet->replace(
-            "__DIR__ . '/assets/family-photo.jpg'",
-            "'php://temp'"
-        );
+        $snippet->setLine(2, '$imageResource = fopen(\'php://temp\', \'r\');');
 
         $res = $snippet->invoke('requestObj');
         $this->assertTrue(array_key_exists('image', $res->returnVal()));

@@ -17,12 +17,13 @@ class Ffmpeg_Wrapper{
     }
 
     function convertToFlac($audioFile){
-        //var_dump($video);
         $video = $this->ffmpeg->open($audioFile);
 
-        $video->save(new \FFMpeg\Format\Audio\Flac(), $audioFile.'.flac');
+        $format = new \FFMpeg\Format\Audio\Flac();
 
-        return $audioFile.'.flac';
+        $video->save($format, $audioFile.'.flac');
+        
+        return $video;
     }
 
 }
