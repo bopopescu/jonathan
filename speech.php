@@ -24,16 +24,18 @@ if (move_uploaded_file($_FILES["audio"]["tmp_name"], $target_file)) {
 
     //upload to cloud storage
     $upload = $storage->upload($fileName, $file);
-
+    
     if($upload){
         $speech = new GoogleSpeech();
         $flac = $storage->get($fileName);
+        $texts = $speech->translate($flac);
 
-        $text = $speech->translate($flac);
-
-        //output result
-        echo 'Transcription: ' . $text[0]['transcript'].'<br>';
-        echo 'Confidence: ' . $text[0]['confidence'].'<br>';
+        echo '<h4>Transcript:</h4>';
+        echo '<ul>';
+        foreach($texts as $t){
+            echo '<li>'.$t['alternatives'][0]['transcript'].'</li>';
+        }
+        echo '</ul>';
 
     }else{
         echo 'Failed to upload audio file to google cloud storage.';

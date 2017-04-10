@@ -20,9 +20,9 @@ class GoogleStorage{
             'projectId' => '268161401461'
         ]);
         $storageClient = $gcloud->storage();
-        $bucket = $storageClient->bucket('testbucket909');
+        $this->bucket = $storageClient->bucket('testbucket909');
         
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket);
+        $adapter = new GoogleStorageAdapter($storageClient, $this->bucket);
 
         $this->filesystem = new Filesystem($adapter);
     }
@@ -32,7 +32,7 @@ class GoogleStorage{
     }
 
     function get($filename){
-        return $this->filesystem->read($filename);
+        return $this->bucket->object($filename);
     }
 
     function upload($filename, $file){

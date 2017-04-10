@@ -4,6 +4,7 @@ namespace lib;
 require __DIR__ . '/../vendor/autoload.php';
 
 use Google\Cloud\Speech\SpeechClient;
+use Google\Cloud\ServiceBuilder;
 
 class GoogleSpeech{
 
@@ -11,10 +12,18 @@ class GoogleSpeech{
 
     function __construct(){
 
-        $this->speech = new SpeechClient([
-            'projectId' => 'speech-to-text-project-163409',
+        // $this->speech = new SpeechClient([
+        //     'projectId' => 'speech-to-text-project-163409',
+        //     'languageCode' => 'en-US',
+        // ]);
+
+        $gcloud = new ServiceBuilder([
+            'keyFilePath' => 'project-1c3b022df4fe.json',
+            'projectId' => '268161401461',
             'languageCode' => 'en-US',
         ]);
+
+        $this->speech = $gcloud->speech();
 
     }
 
@@ -26,9 +35,18 @@ class GoogleSpeech{
         ];
 
         # Detects speech in the audio file
-        $results = $this->speech->recognize($audioFileName, $options);
+        $operation = $this->speech->beginRecognizeOperation($audioFileName, $options);
 
-        return $results;
+        $isComplete = $operation->isComplete();
+        $counter = 0;
+        while (!$isComplete) {
+            sleep(1); // let's wait for a moment...
+            $operation->reload();
+            $isComplete = $operation->isComplete();
+        }
+        $info = $operation->info();
+
+        return $info['response']['results'];
     }
 
 }
